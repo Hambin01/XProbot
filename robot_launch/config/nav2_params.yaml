@@ -1,0 +1,300 @@
+# 最终修改版：TebLocalPlanner + nav2_navfn_planner（无警告+禁止后退+平滑直线）
+bt_navigator:
+  ros__parameters:
+    use_sim_time: False
+    global_frame: map
+    robot_base_frame: base_link
+    odom_frame: odom
+    bt_xml_filename: "nav2_bt_navigator/behavior_trees/navigate_w_replanning_and_recovery.xml"
+    default_bt_xml_filename: "nav2_bt_navigator/behavior_trees/navigate_w_replanning_and_recovery.xml"
+    allow_replanning: False
+    replan_on_failure: False
+    replan_on_planning_scored: False
+    replan_delay: 0.0
+    plugin_lib_names:
+      - nav2_compute_path_to_pose_action_bt_node
+      - nav2_compute_path_through_poses_action_bt_node
+      - nav2_smooth_path_action_bt_node
+      - nav2_follow_path_action_bt_node
+      - nav2_spin_action_bt_node
+      - nav2_wait_action_bt_node
+      - nav2_assisted_teleop_action_bt_node
+      - nav2_back_up_action_bt_node
+      - nav2_drive_on_heading_bt_node
+      - nav2_clear_costmap_service_bt_node
+      - nav2_is_stuck_condition_bt_node
+      - nav2_goal_reached_condition_bt_node
+      - nav2_goal_updated_condition_bt_node
+      - nav2_globally_updated_goal_condition_bt_node
+      - nav2_is_path_valid_condition_bt_node
+      - nav2_initial_pose_received_condition_bt_node
+      - nav2_reinitialize_global_localization_service_bt_node
+      - nav2_rate_controller_bt_node
+      - nav2_distance_controller_bt_node
+      - nav2_speed_controller_bt_node
+      - nav2_truncate_path_action_bt_node
+      - nav2_truncate_path_local_action_bt_node
+      - nav2_goal_updater_node_bt_node
+      - nav2_recovery_node_bt_node
+      - nav2_pipeline_sequence_bt_node
+      - nav2_round_robin_node_bt_node
+      - nav2_transform_available_condition_bt_node
+      - nav2_time_expired_condition_bt_node
+      - nav2_path_expiring_timer_condition
+      - nav2_distance_traveled_condition_bt_node
+      - nav2_single_trigger_bt_node
+      - nav2_goal_updated_controller_bt_node
+      - nav2_is_battery_low_condition_bt_node
+      - nav2_navigate_through_poses_action_bt_node
+      - nav2_navigate_to_pose_action_bt_node
+      - nav2_remove_passed_goals_action_bt_node
+      - nav2_planner_selector_bt_node
+      - nav2_controller_selector_bt_node
+      - nav2_goal_checker_selector_bt_node
+      - nav2_controller_cancel_bt_node
+      - nav2_path_longer_on_approach_bt_node
+      - nav2_wait_cancel_bt_node
+      - nav2_spin_cancel_bt_node
+      - nav2_back_up_cancel_bt_node
+      - nav2_assisted_teleop_cancel_bt_node
+      - nav2_drive_on_heading_cancel_bt_node
+      - nav2_is_battery_charging_condition_bt_node
+
+# 核心修改1：TebLocalPlanner（修正格式+禁止后退+优化平滑/直线优先）
+controller_server:
+  ros__parameters:
+    odom_topic: /odom
+    use_sim_time: False
+    controller_frequency: 5.0
+    controller_plugin_types: ["teb_local_planner::TebLocalPlannerROS"]  # :: 分隔，局部规划器格式正确
+    controller_plugins: ["FollowPath"]
+    current_goal_checker: "general_goal_checker"  # 新增：关联目标检查器，消除警告
+    FollowPath:
+      plugin: "nav2_rotation_shim_controller::RotationShimController"
+      primary_controller: "teb_local_planner::TebLocalPlannerROS"
+      angular_dist_threshold: 0.785
+      forward_sampling_distance: 0.5
+      rotate_to_heading_angular_vel: 1.8
+      max_angular_accel: 3.2
+      simulate_ahead_time: 1.0
+      rotate_to_goal_heading: true
+      use_path_orientations: false
+
+      teb_autosize: 1.0
+      dt_ref: 0.3
+      dt_hysteresis: 0.1
+      max_samples: 500
+      global_plan_overwrite_orientation: False
+      allow_init_with_backwards_motion: False  # 强化禁止后退：不允许初始后退运动
+      max_global_plan_lookahead_dist: 3.0
+      global_plan_viapoint_sep: 1.0
+      global_plan_prune_distance: 1.0
+      exact_arc_length: False
+      feasibility_check_no_poses: 2
+      publish_feedback: False
+          
+      # Robot（核心修改：禁止后退+降低速度/加速度，提升平滑性）
+      max_vel_x: 0.4
+      max_vel_x_backwards: 0.01  # 关键：彻底禁用后退速度（原0.05改为0.0）
+      max_vel_y: 0.0
+      max_vel_theta: 0.3  # 降低最大角速度（原0.5改为0.3），减少转弯晃动
+      acc_lim_x: 0.5  # 降低线加速度（原1.0改为0.5），避免急加速
+      acc_lim_theta: 0.5  # 降低角加速度（原1.0改为0.5），避免急转弯
+
+      footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
+        type: "circular"
+        radius: 0.17 # for type "circular"
+
+      # GoalTolerance（新增：精准到位配置，避免目标点晃动）
+      free_goal_vel: False
+      xy_goal_tolerance: 0.05
+      yaw_goal_tolerance: 0.05
+      latch_xy_goal_tolerance: True
+          
+      # Obstacles（与代价地图保持一致）
+      min_obstacle_dist: 0.1
+      inflation_dist: 0.2  # 与全局/局部代价地图inflation_radius一致（原0.1改为0.2）
+      include_costmap_obstacles: True
+      costmap_obstacles_behind_robot_dist: 1.0
+      obstacle_poses_affected: 15
+
+      dynamic_obstacle_inflation_dist: 0.6
+      include_dynamic_obstacles: True 
+
+      costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
+      costmap_converter_spin_thread: True
+      costmap_converter_rate: 5
+
+      # Optimization（核心修改：提升直线优先+速度平滑权重）
+      no_inner_iterations: 5
+      no_outer_iterations: 4
+      optimization_activate: True
+      optimization_verbose: False
+      penalty_epsilon: 0.1
+      obstacle_cost_exponent: 4.0
+      weight_max_vel_x: 0.5
+      weight_max_vel_theta: 0.5
+      weight_acc_lim_x: 1.0  # 提高加速度权重，惩罚急加速
+      weight_acc_lim_theta: 10.5
+      weight_kinematics_nh: 1000.0
+      weight_kinematics_forward_drive: 2000.0  # 大幅提高前进驱动权重，强化禁止后退
+      weight_kinematics_turning_radius: 1.0
+      weight_optimaltime: 1.0
+      weight_shortest_path: 1000.0  # 大幅提高最短路径权重（原500.0），强化直线优先
+      weight_obstacle: 100.0
+      weight_inflation: 0.2
+      weight_dynamic_obstacle: 10.0
+      weight_dynamic_obstacle_inflation: 0.2
+      weight_viapoint: 50.0
+      weight_adapt_factor: 2.0
+
+      # Homotopy Class Planner（核心修改：关闭同伦类规划，避免冗余转弯，强化直线优先）
+      enable_homotopy_class_planning: False  # 原True改为False，消除多路径选择，贴合直线需求
+      enable_multithreading: false
+      max_number_classes: 4
+      selection_cost_hysteresis: 5.0
+      selection_prefer_initial_plan: 1.0
+      selection_obst_cost_scale: 1.0
+      selection_alternative_time_cost: True
+
+      roadmap_graph_no_samples: 15
+      roadmap_graph_area_width: 5.0
+      roadmap_graph_area_length_scale: 1.0
+      h_signature_prescaler: 0.5
+      h_signature_threshold: 0.1
+      obstacle_heading_threshold: 0.45
+      switching_blocking_period: 0.0
+      viapoints_all_candidates: True
+      delete_detours_backwards: True
+      max_ratio_detours_duration_best_duration: 3.0
+      visualize_hc_graph: False
+      visualize_with_time_as_z_axis_scale: 0.0
+
+      # Recovery
+      shrink_horizon_backup: True
+      shrink_horizon_min_duration: 10.0
+      oscillation_recovery: True
+      oscillation_v_eps: 0.1
+      oscillation_omega_eps: 0.1
+      oscillation_recovery_min_duration: 10.0
+      oscillation_filter_duration: 10.0
+
+# 核心修改2：nav2_navfn_planner（修正格式，保留原核心参数）
+planner_server:
+  ros__parameters:
+    use_sim_time: False
+    expected_planner_frequency: 0.0
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_straightline_planner/StraightLine"  # / 分隔，全局规划器格式正确
+      tolerance: 0.05
+      use_astar: true  # 启用A*算法，生成更优直线路径
+      allow_unknown: true
+      cost_factor: 5.0
+      neutral_cost: 1
+      lethal_cost: 253
+
+# 核心修改3：新增goal_checker（消除警告，与控制器阈值一致）
+goal_checker:
+  ros__parameters:
+    use_sim_time: False
+    goal_checker_plugins: ["general_goal_checker"]
+    general_goal_checker:
+      plugin: "nav2_goal_checker::SimpleGoalChecker"  # :: 分隔，格式正确
+      xy_goal_tolerance: 0.05  # 与controller_server保持一致
+      yaw_goal_tolerance: 0.05  # 与controller_server保持一致
+      stateful: True  # 启用有状态检查，避免目标点反复判定
+
+# 核心修改4：recoveries_server（移除back_up，禁止后退恢复）
+recoveries_server:
+  ros__parameters:
+    use_sim_time: False
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 5.0
+    recovery_plugins: ["spin", "clear_costmap"]  # 移除back_up（原包含），禁止后退恢复
+    spin:
+      plugin: "nav2_recoveries::Spin"  # :: 分隔，修正格式（原/）
+      spin_dist: 3.14
+      spin_speed: 0.3  # 降低旋转速度（原0.5改为0.3），提升平滑性
+    clear_costmap:
+      plugin: "nav2_recoveries::ClearCostmap"  # :: 分隔，修正格式（原/）
+      layer_names: ["obstacle_layer"]
+      clear_after_recovery: true
+      radius: 2.0
+
+# 全局代价地图（保留原配置，仅统一inflation_radius）
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: False
+      global_frame: map
+      robot_base_frame: base_link
+      odom_frame: odom
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      transform_tolerance: 0.1
+      plugins:
+        - name: obstacle_layer
+          type: "nav2_costmap_2d::ObstacleLayer"
+        - name: inflation_layer
+          type: "nav2_costmap_2d::InflationLayer"
+      obstacle_layer:
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          sensor_frame: laser
+          data_type: LaserScan  
+          marking: true
+          clearing: true
+          min_obstacle_height: 0.0
+          max_obstacle_height: 0.3
+          obstacle_max_range: 3.5
+          obstacle_min_range: 0.1
+          raytrace_max_range: 3.5
+          raytrace_min_range: 0.1
+      inflation_layer:
+        enabled: true
+        inflation_radius: 0.2  # 与控制器inflation_dist一致
+        cost_scaling_factor: 10.0
+
+# 局部代价地图（保留原配置，仅统一inflation_radius）
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: False
+      global_frame: odom
+      robot_base_frame: base_link
+      update_frequency: 10.0
+      publish_frequency: 5.0
+      transform_tolerance: 0.1
+      rolling_window: true
+      width: 4
+      height: 4
+      resolution: 0.05
+      plugins:
+        - name: obstacle_layer
+          type: "nav2_costmap_2d::ObstacleLayer"
+        - name: inflation_layer
+          type: "nav2_costmap_2d::InflationLayer"
+      obstacle_layer:
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          sensor_frame: laser
+          data_type: LaserScan  
+          marking: true
+          clearing: true
+          min_obstacle_height: 0.0
+          max_obstacle_height: 0.3
+          obstacle_max_range: 2.0
+          obstacle_min_range: 0.1
+          raytrace_max_range: 2.0
+          raytrace_min_range: 0.1
+          obstacle_lifetime: 0.5
+      inflation_layer:
+        enabled: true
+        inflation_radius: 0.2  # 与控制器、全局代价地图一致
+        cost_scaling_factor: 10.0

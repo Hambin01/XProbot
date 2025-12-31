@@ -1,0 +1,44 @@
+cmd_nodes:
+
+
+  - topic_name:  "cmd_vel"
+    timeout:     0.5
+    priority:    10
+    short_desc:  "Navigation stack controller"
+
+  - topic_name:  "/dev/input/js0"
+    timeout:     0.5
+    priority:    4
+    short_desc:  "F710 joy"
+
+  - topic_name:  "ui_cmd_vel"
+    timeout:     0.5
+    priority:    2
+    short_desc:  "ui"
+
+  - topic_name:  "heart_cmd_vel"
+    timeout:     0.5
+    priority:    100
+    short_desc:  "heart"
+
+  - topic_name:  "web"
+    timeout:    0.5
+    priority:    4
+    short_desc:  "web"
+
+  - topic_name:  "stop_cmd_vel"
+    timeout:     0.5
+    priority:    1
+    short_desc:  "web"
+
+publisher:       "smoother_cmd_vel"
+
+
+joy_types:
+  - joy_frame: "/dev/input/js0"
+    max_linear_speed: 0.5
+    max_angular_speed: 0.25
+  - joy_frame: "/web"
+    max_linear_speed: 0.5
+    max_angular_speed: 0.25
+
