@@ -16,6 +16,9 @@ install(DIRECTORY rviz/
 install(DIRECTORY config/ 
   DESTINATION share/${PROJECT_NAME}/config/
 )
+install(DIRECTORY script/ 
+  DESTINATION share/${PROJECT_NAME}/script/
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

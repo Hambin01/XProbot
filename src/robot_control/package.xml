@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot_control</name>
+  <version>0.10.3</version>
+  <description>
+    Tutorials showing how to write plugins for RViz2.
+  </description>
+  
+  <maintainer email="william@osrfoundation.org">William Woodall</maintainer>
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/robot_control</url>
+  <author>Dave Hershberger</author>
+
+  <!-- ROS2 构建工具依赖 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>cmake</buildtool_depend>
+
+  <!-- 编译依赖 -->
+  <build_depend>rclcpp</build_depend>
+  <build_depend>rviz_common</build_depend>
+  <build_depend>rviz_default_plugins</build_depend>
+  <build_depend>pluginlib</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>nlohmann_json</build_depend>
+  
+  <!-- 消息包编译依赖 -->
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>robot_state_msgs</build_depend>
+  <build_depend>robot_task_msgs</build_depend>
+  
+  <!-- TF2 编译依赖 -->
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+
+  <!-- 运行依赖 -->
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>rviz_common</exec_depend>
+  <exec_depend>rviz_default_plugins</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>nlohmann_json</exec_depend>
+  
+  <!-- 消息包运行依赖 -->
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>robot_state_msgs</exec_depend>
+  <exec_depend>robot_task_msgs</exec_depend>
+  
+  <!-- TF2 运行依赖 -->
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+
+  <!-- 导出配置（ROS2 RViz2 插件声明） -->
+  <export>
+    <build_type>ament_cmake</build_type>
+    <rviz_common plugin="${prefix}/plugin_control.xml"/>
+  </export>
+</package>
