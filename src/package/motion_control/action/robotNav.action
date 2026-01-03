@@ -1,0 +1,17 @@
+# Define the goal
+uint8    goal_type 
+uint8    dir_type               
+geometry_msgs/PoseStamped   start_pose   #出发点位姿
+geometry_msgs/PoseStamped   goal_pose    #目标点位姿
+
+---
+# result
+bool isArrived     
+
+---
+# feedback message
+float32 goal_distance
+uint8    robot_action_type    #运动类型，参考底层协议
+float32  speed          #设置速度
+float32  radius  		#设置角速度
+float32  angle          #设置角度

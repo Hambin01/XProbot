@@ -1,0 +1,41 @@
+<launch>
+
+  <!--启动irobot机器人-->
+  <!-- <node pkg="joy" type="joy_node" name="joy_node" respawn="true"  />
+  <node pkg="serial_com" type="serial_stm32_node" name="serial_stm32_node" output="screen" respawn="true" />
+  <node pkg="joy_com" type="joy_f710_node" name="joy_f710_node" respawn="true" /> -->
+
+  <!-- <node pkg="robot_pose" type="robot_pose_node" name="robot_pose_node" output="screen" respawn="true"  /> -->
+  <!--include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include-->
+  
+  <!-- <node pkg="tcp_com" type="tcp_com_node" name="tcp_com_node" output="screen" respawn="true"  /> -->
+
+   <!--include file="$(find odom)/launch/odom.launch"></include-->
+   <include file="$(find dummy_robot)/launch/dummy_robot.launch"></include>
+   <!-- <include file="$(find pose_to_odom)/launch/pose_to_odom.launch"></include> -->
+   <!-- <include file="$(find scan_convert)/launch/scan_convert.launch"></include> -->
+   <include file="$(find robot_pose_publisher)/launch/robot_pose.launch"></include>
+    <!-- <include file="$(find pointcloud_to_laserscan)/launch/laserscan_to_pointcloud_node.launch"></include>
+    <include file="$(find link_visual)/launch/link_visual.launch"></include> -->
+
+  <!-- 启动雷达驱动 -->
+  <!-- <include file="$(find pepperl_fuchs_r2000)/launch/r2000.launch"></include> -->
+  <!--include file="$(find cartographer_ros)/launch/odom.launch"></include-->
+  <node pkg="tf" type="static_transform_publisher" name="base2link" args="0 0 0 0 0 0    base_link link_1   25" />
+  <node name="map_server" pkg="map_server" type="map_server" args="/home/robot/ROBOT_INDOOR/install/maps/map.yaml _frame_id:=map" />
+  <!-- <node name="map_server2" pkg="map_server" type="map_server" args="/home/hambin/ROBOT_INDOOR/install/maps/map_1.yaml" >
+    <remap from="map" to="map1" />
+    <param name="frame_id" value="map"/>
+  </node> -->
+  <!--include file="$(find localization)/launch/location.launch"></include-->
+  <!-- <node name="scan_manager" pkg="rosbridge_system" type="scan_convert.py" output="screen"  respawn="true" /> -->
+  <!-- <include file="$(find pose_init)/launch/pose_init.launch"></include> -->
+  <!-- <include file="$(find cartographer_ros)/launch/localization_indoor.launch"></include> -->
+  <!-- Move base -->
+   <include file="$(find navigation_plan)/launch/navigation.launch"></include>
+  <include file="$(find motion_control)/launch/motion_control_indoor.launch"></include> 
+  <!-- View in rviz -->
+
+  <node name="ai_rviz" pkg="rviz" type="rviz"  args="-d /home/robot/ROBOT_INDOOR/install/rviz/gui.rviz"  />
+
+</launch>

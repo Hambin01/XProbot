@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pose_to_odom</name>
+  <version>0.0.0</version>
+  <maintainer email="821022334@qq.com">Hambin</maintainer>
+  <license>BSD</license>
+  <author email="821022334@qq.com">Hambin</author>
+  <description>Full-featured PoseStamped to Odometry + TF node with IMU fusion and dynamic reconfig</description>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+
+</package>

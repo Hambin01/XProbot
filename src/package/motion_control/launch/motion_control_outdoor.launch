@@ -1,0 +1,5 @@
+<launch>
+   <node pkg="motion_control" type="motion_control_node" respawn="true" name="motion_control_node" output="screen" clear_params="true" >
+        <rosparam command="load" file="$(find motion_control)/config/motion_control_outdoor.yaml" ns="/motion_control_node"/>
+   </node>
+</launch>

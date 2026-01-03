@@ -1,0 +1,26 @@
+{
+    "robots": [
+        {
+            "id": 1,
+            "is_simulation": false,
+            "pose_topic": "/robot_1_pose",
+            "goal_cmd_topic": "/agv1/goal",
+            "goal_arrive_threshold": 0.1,
+            "priority": 5
+        },
+        {
+            "id": 2,
+            "is_simulation": true,
+            "priority": 3,
+            "init_node": "2"
+        },
+        {
+            "id": 3,
+            "is_simulation": false,
+            "pose_topic": "robot_2_pose",
+            "goal_cmd_topic": "/agv3/cmd",
+            "goal_arrive_threshold": 0.1,
+            "priority": 8
+        }
+    ]
+}

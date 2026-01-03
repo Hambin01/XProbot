@@ -1,0 +1,7 @@
+<launch>
+   <node pkg="robot_pose_publisher" type="robot_pose_publisher" respawn="true" name="robot_pose_publisher_node" output="screen">
+      <param name="is_stamped" value="true" />
+      <remap from="robot_pose" to="robot_pose" />
+   </node>
+   
+</launch>

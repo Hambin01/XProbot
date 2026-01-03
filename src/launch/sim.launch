@@ -1,0 +1,71 @@
+<launch>
+
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+  <include file="$(find dummy_robot)/launch/dummy_robot.launch"></include>
+  <!-- <node pkg="tcp_com" type="tcp_com_node" name="tcp_com_node" output="screen" respawn="true"  /> -->
+    <node name="data_convert" pkg="data_convert" type="data_convert_node" output="screen">
+        <remap from="data_to_stm32" to="data_to_stm32"/>
+        <remap from="cmd_vel" to="cmd_vel"/>  
+    </node>
+    <node pkg="navigation_plan" type="navigation_plan_node" respawn="true" name="navigation_plan_node" output="screen">
+     <remap from="data_to_stm32" to="data_to_stm32"/>
+     <remap from="robot_pose" to="odom"/>
+     
+    </node>
+    <node pkg="motion_control" type="motion_control_node" respawn="true" name="motion_control_node" output="screen" clear_params="true" >
+        <rosparam command="load" file="$(find motion_control)/config/motion_control_indoor.yaml" ns="/motion_control_node"/>
+        <remap from="robot_2_pose" to="robot_2_pose"/>
+        
+    </node>
+    <node pkg="robot_pose_publisher" type="robot_pose_publisher" respawn="true" name="robot_pose_publisher_node" output="screen">
+      <param name="is_stamped" value="true" />
+      <param name="map_frame" value="map"/>
+      <param name="base_frame" value="base_link" />
+      <remap from="robot_pose" to="robot_2_pose" />
+   </node>
+
+    <node name="data_convert1" pkg="data_convert" type="data_convert_node" output="screen">
+        <remap from="data_to_stm32" to="data_to_stm32_1"/>
+        <remap from="cmd_vel" to="cmd_vel1"/>  
+    </node>
+    <node pkg="navigation_plan" type="navigation_plan_node" respawn="true" name="navigation_plan_node1" output="screen">
+      <remap from="data_to_stm32" to="data_to_stm32_1"/>
+      <remap from="robot_pose" to="odom1"/>
+    </node>
+    <!-- <node pkg="motion_control" type="motion_control_node" respawn="true" name="motion_control_node1" output="screen" clear_params="true" >
+        <rosparam command="load" file="$(find motion_control)/config/motion_control_indoor.yaml" ns="/motion_control_node"/>
+        <remap from="robot_pose" to="robot_pose1"/>
+        <remap from="data_to_stm32" to="data_to_stm32_1"/>
+    </node> -->
+    <node pkg="robot_pose_publisher" type="robot_pose_publisher" respawn="true" name="robot_pose_publisher_node1" output="screen">
+      <param name="is_stamped" value="true" />
+      <param name="map_frame" value="map"/>
+      <param name="base_frame" value="base_link1" />
+      <remap from="robot_pose" to="robot_1_pose" />
+</node>
+
+  
+
+    <include file="$(find pointcloud_to_laserscan)/launch/laserscan_to_pointcloud_node.launch"></include>
+    <!-- <include file="$(find link_visual)/launch/link_visual.launch"></include> -->
+
+  <node pkg="tf" type="static_transform_publisher" name="base2link" args="0 0 0 0 0 0    base_link link_1   25" />
+  <node pkg="tf" type="static_transform_publisher" name="base2link1" args="0 0 0 0 0 0    base_link1 link_2   25" />
+  <node name="map_server" pkg="map_server" type="map_server" args="/home/hambin/ROBOT_INDOOR/install/maps/map.yaml _frame_id:=map" />
+
+  <include file="$(find pose_init)/launch/pose_init.launch"></include>
+  <node pkg="robot_scheduling" type="robot_scheduling_node" name="robot_scheduling_node" output="screen" respawn="true">
+      <param name="replan_frequency"       type="double" value="1.0" />  <!-- 重规划频率(Hz) -->
+      <param name="replan_timeout"         type="double" value="60.0" /> <!-- 重规划超时时间(s) -->
+      <param name="robot_speed"            type="double" value="0.1" />  <!-- 机器人移动速度(m/s) -->
+      <param name="simulation_freq"        type="double" value="10.0" /> <!-- 仿真循环频率(Hz) -->
+      <param name="conflict_distance"      type="double" value="0.5" />  <!-- 冲突检测距离(m) -->
+      <param name="node_radius"            type="double" value="0.2" />  <!-- 拓扑节点可视化半径(m) -->
+      <param name="edge_width"             type="double" value="0.05" /> <!-- 拓扑边可视化宽度(m) -->
+      <param name="robot_config_path"              type="string" value="/home/hambin/ROBOT_INDOOR/install/nodes/robot_config.json" />
+      <param name="json_path"              type="string" value="/home/hambin/ROBOT_INDOOR/install/nodes/my.json" />
+  </node>
+
+  <node name="ai_rviz" pkg="rviz" type="rviz"  args="-d /home/hambin/ROBOT_INDOOR/install/rviz/gui.rviz"  />
+
+</launch>

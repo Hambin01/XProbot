@@ -1,0 +1,9 @@
+<library path="libTaskDeal_lib">
+  <class name="TaskDeal/TaskDealNodelet"
+         type="cloud_to_img::TaskDealNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      TaskDeal.
+    </description>
+  </class>
+</library>

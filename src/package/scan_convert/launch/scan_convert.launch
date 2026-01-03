@@ -1,0 +1,8 @@
+<launch>
+    <node pkg="scan_convert" type="scan_convert_node" name="scan_convert_node" output="screen" respawn="true">
+        <param name="freq" value="2"/>
+        <remap from="scan" to="/scan1" />
+    </node>
+
+
+</launch>

@@ -1,0 +1,80 @@
+default_params:
+  default_cylinder_radius: 0.05
+  default_cylinder_color:
+    - 0
+    - 1
+    - 0
+    - 0.5
+  default_cylinder_offset:
+    - 0
+    - 0
+    - 0
+  default_cuboid_offset:
+    - 0
+    - 0
+    - 0
+  default_cuboid_size:
+    - 0.08
+    - 0.08
+    - 0.08
+  default_cuboid_color:
+    - 0
+    - 1
+    - 0
+    - 0.5
+  default_cuboid_rotate:
+    - 0
+    - 0
+    - 0
+  default_cuboid_rotate_order: xyz
+cylinder_radii:
+  - 0.2
+cylinder_colors:
+  -
+    - 1
+    - 0
+    - 0
+    - 0.5
+cylinder_offsets:
+  -
+    - 0
+    - 0
+    - 0
+cuboid_offsets:
+  -
+    - 0
+    - 0
+    - 0
+  -
+    - 0
+    - 0
+    - 0
+cuboid_sizes:
+  -
+    - 1
+    - 0.6
+    - 0.4
+  -
+    - 0.4
+    - 1
+    - 0.4
+cuboid_colors:
+  -
+    - 0
+    - 1
+    - 0
+    - 0.8
+  -
+    - 0
+    - 1
+    - 0
+    - 0.8
+cuboid_rotates:
+  -
+    - 0
+    - 0
+    - 0
+  -
+    - 0
+    - 0
+    - 0

@@ -1,0 +1,11 @@
+<launch>
+
+    <node pkg="video_publisher" type="video_publisher_node" name="video_vision_node" output="screen" respawn="true">
+        <param name="url" value="/dev/video2"/>
+        <param name="save" value="false"/>
+        <param name="image_resize" value="2"/>
+        <param name="use_nvdec" value="false"/>
+    </node>
+    
+
+</launch>

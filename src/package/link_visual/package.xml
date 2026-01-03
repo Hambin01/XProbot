@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package>
+  <name>link_visual</name>
+  <version>0.0.0</version>
+
+  <description>
+    plane detect!
+  </description>
+
+  <maintainer email="hambin.lu@qq.com">hambin</maintainer>
+
+  <license>BSD</license>
+
+  <author email="hambin.lu@qq.com">hambin</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend>tf2</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+
+
+</package>

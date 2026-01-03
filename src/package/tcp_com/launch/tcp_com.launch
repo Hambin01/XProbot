@@ -1,0 +1,5 @@
+<launch>
+   <node pkg="tcp_com" type="tcp_com_node" name="tcp_com_node" output="screen" respawn="true" clear_params="true" >
+         <rosparam command="load" file="$(find tcp_com)/config/tcp_param.yaml" ns="/tcp_com"/>
+   </node>
+</launch>

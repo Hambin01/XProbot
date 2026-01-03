@@ -1,0 +1,13 @@
+<launch>
+  <node name="pose_to_odom_node" pkg="pose_to_odom" type="pose_to_odom_node" output="screen">
+    <!-- 基础配置 -->
+    <param name="pub_tf" value="false" />
+    <param name="odom_frame_id" value="odom" />
+    <param name="base_link_frame_id" value="base_link" />
+    <param name="publish_rate" value="20" />
+    <param name="filter_window_size" value="3" />
+    <param name="max_position_jump" value="0.1" />
+    <param name="max_yaw_jump" value="1.0" />
+  </node>
+
+</launch>

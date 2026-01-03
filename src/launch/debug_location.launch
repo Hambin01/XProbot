@@ -1,0 +1,23 @@
+<launch>
+
+  <!--启动irobot机器人-->
+  <node pkg="joy" type="joy_node" name="joy_node" respawn="true"  />
+  <node pkg="serial_com" type="serial_stm32_node" name="serial_stm32_node" output="screen" respawn="true" />
+  <node pkg="joy_com" type="joy_f710_node" name="joy_f710_node" respawn="true" />
+
+  <node pkg="robot_pose" type="robot_pose_node" name="robot_pose_node" output="screen" respawn="true"  />
+  <node pkg="tcp_com" type="tcp_com_node" name="tcp_com_node" output="screen" respawn="true"  />
+
+  <!--<node pkg="odom" type="odom_node" name="odom_node"/>-->
+
+  <!-- 启动雷达驱动 -->
+  <include file="$(find pepperl_fuchs_r2000)/launch/r2000.launch"></include>
+  <include file="$(find cartographer_ros)/launch/my_indoor_robot_backpack_2d_localization.launch"></include>
+  <!-- Move base -->
+  <include file="$(find navigation_plan)/launch/navigation.launch"></include>
+  <include file="$(find motion_control)/launch/motion_control_indoor.launch"></include>
+  <!-- View in rviz -->
+
+  <!--<node name="ai_rviz" pkg="rviz" type="rviz"  args="-d /home/robot/ROBOT_INDOOR/src/rviz/location.rviz"  />-->
+
+</launch>

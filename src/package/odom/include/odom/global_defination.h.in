@@ -1,0 +1,18 @@
+/**
+ * Copyright 2021 The Kali Authors
+ * _         _ _                  
+ * | | ____ _| (_) __  ___ __ ___  
+ * | |/ / _` | | | \ \/ / '_ ` _ \ 
+ * |   < (_| | | |  >  <| | | | | |
+ * |_|\_\__,_|_|_| /_/\_\_| |_| |_| 
+ *
+ */
+#ifndef HARDWARE_DRIVER_GLOBAL_DEFINATION_H_IN_
+#define HARDWARE_DRIVER_GLOBAL_DEFINATION_H_IN_
+
+#include <string>
+
+namespace hardware_driver {
+    const std::string WORK_SPACE_PATH = "@WORK_SPACE_PATH@";
+}
+#endif

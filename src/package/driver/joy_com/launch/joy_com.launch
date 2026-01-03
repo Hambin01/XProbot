@@ -1,0 +1,5 @@
+<launch>
+   <node pkg="joy_com" type="joy_f710_node" name="joy_f710_node" output="screen" respawn="true">
+ </node>
+
+</launch>

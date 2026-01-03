@@ -1,0 +1,19 @@
+<launch>
+    <node pkg="robot_scheduling" type="robot_scheduling_node" name="robot_scheduling_node" output="screen" respawn="true">
+        <param name="replan_frequency"       type="double" value="1.0" />  <!-- 重规划频率(Hz) -->
+        <param name="replan_timeout"         type="double" value="60.0" /> <!-- 重规划超时时间(s) -->
+        <param name="robot_speed"            type="double" value="0.1" />  <!-- 机器人移动速度(m/s) -->
+        <param name="simulation_freq"        type="double" value="10.0" /> <!-- 仿真循环频率(Hz) -->
+        <param name="conflict_distance"      type="double" value="0.5" />  <!-- 冲突检测距离(m) -->
+        <param name="node_radius"            type="double" value="0.2" />  <!-- 拓扑节点可视化半径(m) -->
+        <param name="edge_width"             type="double" value="0.05" /> <!-- 拓扑边可视化宽度(m) -->
+        <param name="json_path"              type="string" value="/home/hambin/ROBOT_INDOOR/install/nodes/my.json" />
+        <param name="robot_config_path"              type="string" value="/home/hambin/ROBOT_INDOOR/install/nodes/robot_config.json" />
+    </node>
+
+    <arg name="robot_scheduling_rviz" default="1" />
+    <group if="$(arg robot_scheduling_rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="robot_scheduling_rviz" args="-d $(find robot_scheduling)/rviz/test.rviz" />
+    </group>
+
+</launch>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="obstacle_stop" pkg="obstacle_stop" type="obstacle_stop_node" output="screen">
+    <remap from="obstacle_points" to="/boxs_obstacle_predict/filtered_rslidar_points"/>
+        <param name="~cluster_tolerance" value="0.1" />       <!-- 聚类距离 -->
+        <param name="~min_cluster_size" value="5" />         <!-- 最小点 -->
+        <param name="~obstacle_count_threshold" value="2" />  <!-- 连续帧判定障碍 -->
+        <param name="~clear_count_threshold" value="4" />     <!-- 连续帧清除障碍 -->
+        <param name="~min_stop_distance" value="0.1" />    <!-- 直接停止 -->
+        <param name="~decel_start_distance" value="1.5" /> <!-- 不减速 -->
+    </node>
+
+
+
+</launch>

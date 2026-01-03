@@ -1,0 +1,25 @@
+
+max_pid: 0.05
+kp: 1.5
+ki: 0
+Kd: 2.8
+kt: 0.75
+
+rotate_speed: 0.7
+acc: 0.1
+max_speed: 0.8
+min_speed: 0.1
+stop_speed: 0.05
+
+stop_radio: 1.5
+dis_radio: 5
+rotate_stop: 1.0
+dev_angle: 10.0
+stop_angle: 2.0
+stop_distance: 0.02
+
+localization_rate: 10.0
+goal_distance_threshold: 0.2
+goal_angle_threshold: 1.5
+adjust_distance: 0.2
+use_run_adjust: 1

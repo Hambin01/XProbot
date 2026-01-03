@@ -1,0 +1,9 @@
+# Define the goal
+int64 mode
+int64 sound_id
+---
+# Define the result
+int64 result
+---
+# Define a feedback message
+int64 playing_id

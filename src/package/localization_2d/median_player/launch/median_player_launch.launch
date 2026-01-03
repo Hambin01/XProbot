@@ -1,0 +1,6 @@
+<launch>
+  <node name="median_player_server" pkg="median_player" type="median_player_server.py" output="screen" >
+   <param name="median_path" value="/home/zeng/Downloads/music" />
+   <param name="volume_step" value="50" />
+  </node>
+</launch>

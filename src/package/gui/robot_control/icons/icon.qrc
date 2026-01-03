@@ -1,0 +1,119 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>A_forbid_circle.png</file>
+        <file>A_nomal_circle.png</file>
+        <file>A_nomal.png</file>
+        <file>add.png</file>
+        <file>affirm.png</file>
+        <file>air_pressure.png</file>
+        <file>alarm.png</file>
+        <file>ammeter.png</file>
+        <file>amplification_forbid.png</file>
+        <file>amplification.png</file>
+        <file>battery_low.png</file>
+        <file>battery_status.png</file>
+        <file>bd-bg.jpg</file>
+        <file>button (2).png</file>
+        <file>button.png</file>
+        <file>calendar.png</file>
+        <file>cell.png</file>
+        <file>cheti.png</file>
+        <file>chongzhi.png</file>
+        <file>cut (2).png</file>
+        <file>cut.png</file>
+        <file>D_forbid_circle.png</file>
+        <file>D_nomal_circle.png</file>
+        <file>D_nomal.png</file>
+        <file>data_comparison.png</file>
+        <file>desktop.ini</file>
+        <file>door (2).png</file>
+        <file>door.png</file>
+        <file>earth.png</file>
+        <file>fengli.png</file>
+        <file>help.png</file>
+        <file>home.png</file>
+        <file>humidity.ico</file>
+        <file>humidity.png</file>
+        <file>icon.qrc</file>
+        <file>inquire.png</file>
+        <file>keyboard.png</file>
+        <file>kong.png</file>
+        <file>lead.png</file>
+        <file>light.png</file>
+        <file>location.png</file>
+        <file>lock.png</file>
+        <file>login.png</file>
+        <file>nav.png</file>
+        <file>next (2).png</file>
+        <file>next.png</file>
+        <file>oil.png</file>
+        <file>P_nomal.png</file>
+        <file>P_not_used.png</file>
+        <file>P-not_used.png</file>
+        <file>password.png</file>
+        <file>people.png</file>
+        <file>photo.png</file>
+        <file>playback.png</file>
+        <file>power_supply.png</file>
+        <file>pressure.ico</file>
+        <file>pressure.png</file>
+        <file>previous page (2).png</file>
+        <file>previous page.png</file>
+        <file>ptz.png</file>
+        <file>quit.png</file>
+        <file>radar.png</file>
+        <file>rain.png</file>
+        <file>rainfall.ico</file>
+        <file>record (2).png</file>
+        <file>record (3).png</file>
+        <file>record video.png</file>
+        <file>record.png</file>
+        <file>remote.png</file>
+        <file>renwuguanli.png</file>
+        <file>replacement.png</file>
+        <file>reset.png</file>
+        <file>robot_control_forbid.png</file>
+        <file>robot_control_nomal.png</file>
+        <file>robot_control_not_used.png</file>
+        <file>robot_control_use.png</file>
+        <file>S_forbid_circle.png</file>
+        <file>S_nomal_circle.png</file>
+        <file>S_nomal.png</file>
+        <file>search (2).png</file>
+        <file>search (3).png</file>
+        <file>search_result.png</file>
+        <file>search.png</file>
+        <file>set (2).png</file>
+        <file>set.png</file>
+        <file>shishijiankong.png</file>
+        <file>shouchiyaokong.png</file>
+        <file>shrink_forbid.png</file>
+        <file>shrink.png</file>
+        <file>shujugaunli.png</file>
+        <file>switch.png</file>
+        <file>task_forbid.png</file>
+        <file>task_nomal.png</file>
+        <file>task_not_used.png</file>
+        <file>task_use.png</file>
+        <file>temperature (2).png</file>
+        <file>temperature.ico</file>
+        <file>temperature.png</file>
+        <file>time.png</file>
+        <file>transform.png</file>
+        <file>user name.png</file>
+        <file>user.png</file>
+        <file>video.png</file>
+        <file>voice.png</file>
+        <file>W_forbid_circle.png</file>
+        <file>W_forbid.png</file>
+        <file>W_nomal_circle.png</file>
+        <file>W_nomal.png</file>
+        <file>W_not_used.png</file>
+        <file>W_use.png</file>
+        <file>wind_direction.ico</file>
+        <file>wind_power.png</file>
+        <file>wind_speed.ico</file>
+        <file>Z.png</file>
+        <file>zh.png</file>
+    </qresource>
+</RCC>

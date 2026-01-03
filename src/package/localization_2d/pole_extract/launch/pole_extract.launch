@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="pole_extract" pkg="pole_extract" type="pole_extract" output="screen">
+            <rosparam subst_value="true"> 
+            rang_max: 25
+            rang_min: 1.5             
+            cloude_input_topic: /rslidar_points
+            cloude_output_topic: /pole_cloud
+            pi_x: 900
+            pi_y: 20
+            fov_x: 360.0
+            fov_y: 30.0
+            threshold_gap: 0.2
+            threshold_dis: 0.2
+            threshold_hw: 3.0 
+            lidar_height: 0.5
+        </rosparam>
+    </node>
+
+    <arg name="pole_extract_rviz" default="1" />
+    <group if="$(arg pole_extract_rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="pole_extract_rviz" args="-d $(find pole_extract)/rviz/pole_extract.rviz" />
+    </group>
+
+
+</launch>

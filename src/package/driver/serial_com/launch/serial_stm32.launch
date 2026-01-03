@@ -1,0 +1,5 @@
+<launch>
+   <node pkg="serial_com" type="serial_stm32_node" name="serial_com_node" output="screen" respawn="true">
+ </node>
+
+</launch>

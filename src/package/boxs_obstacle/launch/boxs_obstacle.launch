@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="boxs_obstacle_orgin" pkg="boxs_obstacle" type="boxs_obstacle" output="screen">
+        <rosparam subst_value="true"> 
+            target_frame: base_arm 
+            filter_mode: exclude
+            marker_topic: /link_visual_orign/arm_visual_markers
+            point_cloud_topic: scan_cloud
+            x_min: -3.0
+            x_max: 3.0
+            y_min: -3.0
+            y_max: 3.0
+            z_min: -0.3
+            z_max: 2.0
+            downsample_leaf_size: 0.05
+            denoise_k: 10
+        </rosparam>
+    </node>
+
+    <node name="boxs_obstacle_predict" pkg="boxs_obstacle" type="boxs_obstacle" output="screen">
+        <rosparam subst_value="true"> 
+            target_frame: base_arm 
+            filter_mode: include
+            marker_topic: /link_visual_predict/arm_visual_markers_predict
+            point_cloud_topic: boxs_obstacle_orgin/filtered_rslidar_points
+            x_min: -3.0
+            x_max: 3.0
+            y_min: -3.0
+            y_max: 3.0
+            z_min: -0.3
+            z_max: 2.0
+            downsample_leaf_size: 0.05
+            denoise_k: 10
+        </rosparam>
+    </node>
+
+</launch>

@@ -1,0 +1,4 @@
+<launch>
+   <node pkg="navigation_plan" type="navigation_plan_node" respawn="true" name="navigation_plan_node" output="screen"/>
+
+</launch>

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="/use_sim_time" value="false" />
+    <node name="link_visual_orign" pkg="link_visual" type="link_visual" output="screen">
+            <rosparam subst_value="true"> 
+            arm_base_frame: base_link 
+            joint_frames: [base_link,link_1]
+            update_frequency: 10.0
+            config_path: $(find link_visual)/config/arm_visual_config.yaml
+            enable_path_prediction: false
+            predict_duration: 4
+            predict_step: 0.3
+        </rosparam>
+    </node>
+
+    <node name="link_visual_predict" pkg="link_visual" type="link_visual" output="screen">
+        <rosparam subst_value="true"> 
+            arm_base_frame: base_link 
+            joint_frames: [base_link,link_1]
+            update_frequency: 10.0
+            config_path: $(find link_visual)/config/arm_visual_config_prediction.yaml
+            enable_path_prediction: true
+            predict_duration: 4
+            predict_step: 0.3
+        </rosparam>
+    </node>
+
+    <include file="$(find boxs_obstacle)/launch/boxs_obstacle.launch" />
+    <include file="$(find obstacle_stop)/launch/obstacle_stop.launch" />
+
+    <arg name="link_visual_rviz" default="0" />
+    <group if="$(arg link_visual_rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="link_visual_rviz" args="-d $(find link_visual)/rviz/link_visual.rviz" />
+    </group>
+
+
+</launch>

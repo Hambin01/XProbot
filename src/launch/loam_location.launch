@@ -1,0 +1,18 @@
+<launch>
+
+  <node pkg="joy_com" type="joy_f710_node" name="joy_f710_node"/>
+  <!--<node pkg="joy" type="joy_node" name="joy_node"/>-->
+  <!--<node pkg="serial_com" type="serial_stm32_node" name="serial_stm32_node"/>-->
+  <!--<node pkg="navigation_plan" type="navigation_plan_node" name="navigation_plan_node"/>-->
+  <include file="$(find odom)/launch/odom.launch"></include>
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="/home/robot/ROBOT_INDOOR/src/setconfig/map/my_map.yaml _frame_id:=map" />
+  <include file="$(find navigation_plan)/launch/navigation.launch"></include>
+  <include file="$(find motion_control)/launch/motion_control_indoor.launch"></include>
+  <!--<include file="$(find robot_pose)/launch/robot_pose.launch"></include>-->
+  <include file="$(find tts)/launch/tts.launch"></include>
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+
+</launch>
+

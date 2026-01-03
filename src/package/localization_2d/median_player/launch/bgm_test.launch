@@ -1,0 +1,36 @@
+<launch>
+  <node name="rosbridge_system" pkg="rosbridge_system" type="rosbridge_system.py" output="screen" >
+   <param name="cmd_vel_music" value="False" />
+   <param name="odom_vel_music" value="True" />
+
+   <param name="turn_threshold_omega" value="0.15" />
+   <param name="turn_threshold_num" value="15" />
+
+   <param name="bgm_enabled" value="True" />
+   <param name="bgm_mode" value="loop" />
+   <param name="bgm_id" value="10" />
+
+   <param name="goal_reached_alert" value="True" />
+   <param name="obstacle_alert" value="True" />
+   <param name="charging_state_alert" value="True" />
+
+  </node>
+
+
+  <group ns="music">
+    <!--<param name="tf_prefix" value="music"/>-->
+    <node name="median_player_server" pkg="median_player" type="median_player_server.py" output="screen" >
+      <param name="volume_step" value="50" />
+      <param name="median_path" value="/home/zeng/catkin_ws/src/median_player/sound" />
+    </node>
+  </group>
+
+  <group ns="alert">
+    <!--<param name="tf_prefix" value="alert"/>-->
+    <node name="median_player_server" pkg="median_player" type="median_player_server.py" output="screen" >
+      <param name="median_path" value="/home/zeng/catkin_ws/src/median_player/sound" />
+      <param name="volume_step" value="50" />
+    </node>
+  </group>
+  
+</launch>

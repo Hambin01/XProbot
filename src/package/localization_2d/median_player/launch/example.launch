@@ -1,0 +1,5 @@
+<launch>
+  <node name="simple_player_server" pkg="median_player" type="simple_player_server.py" output="screen" >
+   <param name="file_path" value="/home/zeng/Downloads/music" />
+  </node>
+</launch>

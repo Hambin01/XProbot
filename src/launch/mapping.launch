@@ -1,0 +1,27 @@
+<launch>
+
+  <!--启动irobot机器人-->
+  <node pkg="joy" type="joy_node" name="joy_node" respawn="true"  />
+  <node pkg="serial_com" type="serial_stm32_node" name="serial_stm32_node" respawn="true" />
+  <node pkg="joy_com" type="joy_f710_node" name="joy_f710_node" respawn="true" />
+<!--  <node pkg="rviz" type="rviz" name="rviz"/>-->
+
+  <!--<node pkg="odom" type="odom_node" name="odom_node"/>-->
+
+  <!-- 启动雷达驱动 -->
+  <include file="$(find pepperl_fuchs_r2000)/launch/r2000.launch"></include>
+
+  <include file="$(find cartographer_ros)/launch/mapbuild.launch"></include>
+
+  <!--<node pkg="tf" type="static_transform_publisher" name="base_broad" args="0.185 0 -0.52 0.0 0 0 base_link velodyne 100" />-->
+<!--  <node pkg="tf" type="static_transform_publisher" name="map_broad" args="  0 0 0 0 0 0 map odom 100" />-->
+
+  <!-- Run the map server -->
+  <!--<node name="map_server" pkg="map_server" type="map_server" args="/home/robot/ROBOT_INDOOR/src/setconfig/map/my_map.yaml" />-->
+
+
+  <!-- View in rviz -->
+
+  <!--<node name="ai_rviz" pkg="rviz" type="rviz"  args="-d /home/robot/ROBOT_INDOOR/src/rviz/location.rviz"  />-->
+
+</launch>

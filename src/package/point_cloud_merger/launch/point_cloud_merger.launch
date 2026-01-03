@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="point_cloud_merger" pkg="point_cloud_merger" type="point_cloud_merger_node" output="screen">
+         <param name="input_topics"  type="yaml"  value="[
+            /livox/lidar_11,
+            /livox/lidar_12,
+            /livox/lidar_22,
+            /rslidar_points
+        ]" />
+        <param name="output_topic" value="/merged_points" />
+        <param name="publish_frequency" value="8" />
+        <param name="use_latest_only" value="true" />
+        <param name="transform_to_target_frame" value="true" />
+        <param name="target_frame_id" value="base_arm" />
+    </node>
+
+
+
+</launch>

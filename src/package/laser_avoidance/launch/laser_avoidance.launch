@@ -1,0 +1,3 @@
+<launch>
+   <node pkg="laser_avoidance" type="laser_avoidance_node" name="laser_avoidance_node" output="screen" respawn="true"/>
+</launch>

@@ -1,0 +1,6 @@
+ 
+tcp_port1: 0     #0: disable  
+tcp_port2: 0     #0: disable 
+modbus_port: 9003   #0: disable 
+modbus_port1: 9004   #0: disable 
+modbus_port2: 9005   #0: disable 

@@ -1,0 +1,20 @@
+<launch>
+
+    <node pkg="dummy_robot" type="dummy_robot_node" name="dummy_robot_node" output="screen" respawn="true">
+        <remap from="odom" to="odom"/>
+        <remap from="cmd_vel" to="cmd_vel"/>
+        <param name="frame_id" value="odom"/>
+        <param name="child_frame_id" value="base_link"/>
+    </node>
+
+    <!-- <node pkg="dummy_robot" type="dummy_robot_node" name="dummy_robot_node2" output="screen" respawn="true">
+        <remap from="odom" to="odom1"/>
+        <remap from="cmd_vel" to="cmd_vel1"/>
+        <param name="frame_id" value="odom1"/>
+        <param name="child_frame_id" value="base_link1"/>
+    </node> -->
+
+
+    <node pkg="tf" type="static_transform_publisher" name="map3d_to_map"  args="0 0 0 0   0    0 /map    /odom 10" />
+    <node pkg="tf" type="static_transform_publisher" name="map3d_to_map1"  args="0 0 0 0   0    0 /map    /odom1 10" />
+</launch>
