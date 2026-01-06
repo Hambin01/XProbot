@@ -47,7 +47,6 @@ namespace navigation
 
   Navigation::~Navigation()
   {
-
   }
 
   // 动态参数
@@ -126,7 +125,7 @@ namespace navigation
     double roll, pitch, yaw;
     tf::quaternionMsgToTF(goalPose.pose.orientation, quat);
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-    double goal_yaw=yaw;
+    double goal_yaw = yaw;
 
     geometry_msgs::PoseStamped robot_pose;
     {
@@ -142,8 +141,7 @@ namespace navigation
       if (goal->goal_type != 1 && fabs(goal_yaw - robot_yaw) * 180 / M_PI > (dir_type == 0 ? goal_angle_threshold : goal_angle_threshold * 2))
       {
         action_type = ROTATE_GOAL;
-        std::cout << "ROTATE:" << hypot(goalPose.pose.position.x - robot_pose.pose.position.x, goalPose.pose.position.y - robot_pose_.pose.position.y) << std::endl;
-        std::cout << "GOAL:" << fabs(goal_yaw - robot_yaw) * 180 / M_PI << std::endl;
+        ROS_INFO("ROTATE: Need rotate angle:%f", fabs(goal_yaw - robot_yaw) * 180 / M_PI);
       }
       else
       {
@@ -153,7 +151,6 @@ namespace navigation
     }
     dir_type = goal->dir_type;
     int adjust_time = 0;
-    // LOG(INFO)<<"start go to node!";
 
     while (action_type != STOP)
     {
@@ -192,7 +189,7 @@ namespace navigation
           startPose.pose.position.x = robot_pose.pose.position.x;
           startPose.pose.position.y = robot_pose.pose.position.y;
           ResetParam();
-          // ROS_ERROR("dis is too big!dis:%f",t_dis);
+          ROS_WARN("dis is too big!dis:%f", t_dis);
           break;
         }
         if (GoLineAdjust(abs_angle, t_dis, t_angle, sig * dis))
@@ -215,9 +212,8 @@ namespace navigation
         {
           action_type = RUN_ADJUST;
           ResetParam();
-          LOG(INFO) << ":dx:" << dx;
-          LOG(INFO) << "dy:" << dy;
-          LOG(INFO) << "***************************";
+          ROS_INFO("dx: %f", dx);
+          ROS_INFO("dy: %f", dy);
           // nav_server.setSucceeded();
           run_adjust = 0;
           std_msgs::Int8 adjust_cmd;
@@ -234,7 +230,7 @@ namespace navigation
           nav_server.setSucceeded();
         }
         if (adjust_time > localization_rate * 20)
-          LOG(WARNING) << "Run adjust timeout!";
+          ROS_WARN("Run adjust timeout!");
 
         adjust_time++;
         break;
@@ -258,9 +254,6 @@ namespace navigation
 
   void Navigation::ResetParam(void)
   {
-    // k_angle.Reset();
-    // k_dis.Reset();
-    // k_t_dis.Reset();
     pidCal.PidReset();
     maxSpeedFlag = false;
   }
@@ -307,7 +300,7 @@ namespace navigation
     goal_angle = (fabs(goal_angle) > 180) ? (goal_angle > 0 ? goal_angle - 360 : goal_angle + 360) : goal_angle; // 目标点角度
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw((-robot_yaw + 90) * M_PI / 180);
     robot_yaw = tf::getYaw(odom_quat) * 180 / M_PI; // 机器人当前角度
-    //std::cout << "robot_yaw:" <<robot_yaw<< std::endl;
+    // std::cout << "robot_yaw:" <<robot_yaw<< std::endl;
 
     double angle = atan2(goalPose.pose.position.x - robot_pose.pose.position.x, goalPose.pose.position.y - robot_pose.pose.position.y) * 180 / M_PI;
     abs_angle = robot_yaw - angle;
@@ -321,10 +314,6 @@ namespace navigation
                            goalPose.pose.position.x, goalPose.pose.position.y); // 横向偏差
     t_angle = GetAngelOfTwoVector(goalPose, robot_pose, startPose);
     t_angle = sign0(t_angle) * ((fabs(t_angle) > 90) ? 180 - fabs(t_angle) : fabs(t_angle)); // 相对角度
-
-    // abs_angle=k_angle.Update(abs_angle); //滤波
-    // dis=k_dis.Update(dis);//滤波
-    // t_dis=k_t_dis.Update(t_dis);//滤波
   }
 
   bool Navigation::RotateAdjust(double angle, int dir)
@@ -337,7 +326,7 @@ namespace navigation
       navFeedback.radius = fabs(angle) > stop_angle ? navFeedback.radius : stop_speed;
       navFeedback.radius = -sign0(angle) * navFeedback.radius;
       SetSpeed(navFeedback.speed, navFeedback.radius, 0);
-       //std::cout<<angle<<std::endl;
+      // std::cout<<angle<<std::endl;
       return false;
     }
     else

@@ -1,4 +1,6 @@
 <launch>
-   <node pkg="navigation_plan" type="navigation_plan_node" respawn="true" name="navigation_plan_node" output="screen"/>
+   <node pkg="navigation_plan" type="navigation_plan_node" respawn="true" name="navigation_plan_node" output="screen">
+       <param name="node_file" value="$(find robot_launch)/nodes/my.json" />
+   </node>
 
 </launch>

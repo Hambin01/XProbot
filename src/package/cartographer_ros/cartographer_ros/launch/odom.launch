@@ -16,17 +16,16 @@
 
 <launch>
   <param name="robot_description"
-    textfile="$(find cartographer_ros)/urdf/jh.urdf" />
+    textfile="$(find robot_launch)/urdf/indoor.urdf" />
 
-  <node name="robot_state_publisher" pkg="robot_state_publisher"
-    type="robot_state_publisher" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
   <node name="cartographer_node" pkg="cartographer_ros"
       type="cartographer_node" args="
           -configuration_directory $(find cartographer_ros)/configuration_files
           -configuration_basename odom.lua"
       output="screen">
-    <remap from="scan" to="scan1" />
+    <remap from="scan" to="scan" />
   </node>
 
   <!-- <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"

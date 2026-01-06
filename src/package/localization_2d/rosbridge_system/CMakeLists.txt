@@ -165,15 +165,8 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 install(PROGRAMS
-  bin/rosbridge_system.py
-  bin/rosbridge_system.pyc
-  bin/mysql_node.py
-  bin/mysql_node.pyc
   bin/double_robot_localization.py
   bin/double_robot_localization.pyc
-  bin/homing_control_server.py
-  bin/homing_control_server.pyc
-  bin/one_euro_filter.pyc
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

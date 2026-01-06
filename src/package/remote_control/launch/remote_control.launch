@@ -1,6 +1,6 @@
 <launch>
   <node name="remote_control_node" pkg="remote_control" type="remote_control_node" output="screen">
-    <param name="node_file" value="/home/hambin/ROBOT_INDOOR/install/nodes/my.json"/>
+    <param name="node_file" value="$(find robot_launch)/nodes/my.json" />
   </node>
 
 </launch>

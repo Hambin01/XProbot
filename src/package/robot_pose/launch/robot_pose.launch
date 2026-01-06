@@ -1,4 +1,0 @@
-<launch>
-   <node pkg="robot_pose" type="robot_pose_node" name="robot_pose_node" output="screen" respawn="true"/>
-
-</launch>

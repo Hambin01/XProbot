@@ -44,7 +44,7 @@ endif()
 find_package(Boost REQUIRED COMPONENTS system iostreams)
 find_package(PCL REQUIRED COMPONENTS common)
 
-set(cartographer_DIR /home/robot/ROBOT_INDOOR/install/carto_lib/share/cartographer)
+set(cartographer_DIR /opt/ros/humble/share/cartographer)
 
 find_package(cartographer REQUIRED)
 message("work_dir = ${cartographer_DIR}")

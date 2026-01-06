@@ -1,3 +1,11 @@
 <launch>
-   <node pkg="pose_init" type="init_pose_node" name="init_pose_node" output="screen" respawn="true"/>
+
+    <rosparam file="$(find pose_init)/config/params.yaml" command="load" />
+    <node pkg="pose_init" type="pose_init_node" name="pose_init_node" output="screen" respawn="true">
+        <param name="pose_file" value="$(find pose_init)/config/params.yaml"/>
+        <param name="save_period" value="2.0"/>
+        <param name="use_amcl_pose" value="false"/>
+        
+    </node>
+
 </launch>

@@ -15,22 +15,16 @@ namespace remote_control
     nh_ = nh;
     ros::NodeHandle nh_p("~");
     nh_p.param<std::string>("node_file", node_file, "");
-    pubKeepTask = nh_.advertise<robot_task_msgs::robot_keep_task_send>("/keep_task_send", 1);
-    pubOneTask = nh_.advertise<robot_task_msgs::robot_one_task_send>("/one_task_send", 1);
     pubRobotCmd = nh_.advertise<robot_state_msgs::data_to_stm32>("data_to_stm32", 2);
     pubGoalSend = nh_.advertise<robot_task_msgs::robot_goal>("/goal_node", 1);
     pubNavigationStart = nh_.advertise<robot_task_msgs::robot_navigation_cmd>("/navigation_set", 1);
     pubNodeList = nh_.advertise<visualization_msgs::MarkerArray>("/node_list", 1, true);
     pubGoalList = nh_.advertise<robot_task_msgs::robot_goal_list>("/goal_list", 1);
+    pubDebugLaser = nh_.advertise<std_msgs::Int8>("/debug_cmd", 1);
 
     subRobotPose = nh_.subscribe("/robot_pose", 1, &RemoteControl::RobotPoseCallBack, this);
-    subRobotState = nh_.subscribe("/robot_state", 1, &RemoteControl::StateCallBack, this);
     subClickPoint = nh_.subscribe("/clicked_point", 1, &RemoteControl::ClickPointCallBack, this);
     subRemoteCmd = nh_.subscribe("/remote_cmd", 1, &RemoteControl::RemoteCmdCallBack, this);
-
-    moveTimer = nh_.createTimer(ros::Duration(0.2), &RemoteControl::CmdSet, this);
-    // import_nodes();
-    // import_edges();
     import_nodes(node_file);
   }
 
@@ -130,22 +124,12 @@ namespace remote_control
 
   void RemoteControl::connect_two_points(visualization_msgs::Marker &line_list, geometry_msgs::Pose &p1, geometry_msgs::Pose &p2)
   {
-    line_list.header.frame_id = "map";
-    line_list.header.stamp = ros::Time::now();
-    line_list.ns = "basic_shapes";
-    line_list.action = visualization_msgs::Marker::ADD;
-    line_list.id = 2;
-    line_list.type = visualization_msgs::Marker::LINE_LIST;
-    line_list.scale.x = 0.025;
-    line_list.color.b = 25;
-    line_list.color.g = 0;
-    line_list.color.r = 20;
-    line_list.color.a = 0.5;
     geometry_msgs::Point p;
     p.x = p1.position.x;
     p.y = p1.position.y;
     p.z = p1.position.z;
     line_list.points.push_back(p);
+
     p.x = p2.position.x;
     p.y = p2.position.y;
     p.z = p2.position.z;
@@ -156,80 +140,132 @@ namespace remote_control
   {
     visualization_msgs::MarkerArray markerArray;
     robot_task_msgs::robot_goal_list goalList;
-    markerArray.markers.clear();
-    pubNodeList.publish(markerArray);
 
     int i = 0;
-    for (std::map<std::string, robot_task_msgs::robot_goal>::iterator it = nodeList.begin(); it != nodeList.end(); ++it)
+    for (auto &node_pair : nodeList)
     {
-      std::string name = it->first;
-      geometry_msgs::Pose pose = it->second.pose;
+      std::string name = node_pair.first;
+      geometry_msgs::Pose pose = node_pair.second.pose;
       markerArray.markers.push_back(convert_node_to_mark(i++, name, pose, 0));
-      markerArray.markers.push_back(convert_node_to_mark(i++, name, pose, it->second.is_charge ? 2 : (it->second.dir_type == 0 ? 1 : 3)));
-      goalList.node.push_back(it->second);
+      markerArray.markers.push_back(convert_node_to_mark(i++, name, pose, node_pair.second.is_charge ? 2 : (node_pair.second.dir_type == 0 ? 1 : 3)));
+      goalList.node.push_back(node_pair.second);
     }
 
     visualization_msgs::Marker lines;
+    lines.header.frame_id = "map";
+    lines.header.stamp = ros::Time::now();
+    lines.ns = "basic_shapes";
+    lines.action = visualization_msgs::Marker::ADD;
+    lines.id = 2;
+    lines.type = visualization_msgs::Marker::LINE_LIST;
+    lines.scale.x = 0.025;
+    lines.color.b = 25.0 / 255.0;
+    lines.color.g = 0.0;
+    lines.color.r = 20.0 / 255.0;
+    lines.color.a = 0.5;
+    lines.points.clear();
+
     if (!line_lists.empty())
     {
-      for (int i = 0; i < line_lists.size(); i++)
-        connect_two_points(lines, nodeList[line_lists[i].first].pose, nodeList[line_lists[i].second].pose);
-      markerArray.markers.push_back(lines);
+      for (auto &line_pair : line_lists)
+      {
+        std::string node_name1 = line_pair.first;
+        std::string node_name2 = line_pair.second;
+
+        auto node_it1 = nodeList.find(node_name1);
+        auto node_it2 = nodeList.find(node_name2);
+
+        if (node_it1 != nodeList.end() && node_it2 != nodeList.end())
+        {
+          geometry_msgs::Pose &p1 = node_it1->second.pose;
+          geometry_msgs::Pose &p2 = node_it2->second.pose;
+          connect_two_points(lines, p1, p2);
+        }
+      }
+
+      if (!lines.points.empty())
+      {
+        markerArray.markers.push_back(lines);
+      }
     }
 
     pubGoalList.publish(goalList);
     pubNodeList.publish(markerArray);
   }
 
-  void RemoteControl::CmdSet(const ros::TimerEvent &event)
-  {
-    if (robotState.current_task == RobotCharging)
-      robotMoveFlag = false;
-
-    if (robotMoveFlag)
-      pubRobotCmd.publish(cmd);
-
-    if (robotChargeFlag && (robotState.current_task == RobotIdle || robotState.current_task == RobotRadiusRunning))
-    {
-      if (move_count < 25)
-      {
-        move_count++;
-        pubRobotCmd.publish(cmd);
-      }
-      else
-      {
-        robotChargeFlag = false;
-        move_count = 0;
-        cmd.running.speed = 0;
-        pubRobotCmd.publish(cmd);
-      }
-    }
-  }
-
-  void RemoteControl::RobotPoseCallBack(const nav_msgs::OdometryConstPtr &pose)
+  void RemoteControl::RobotPoseCallBack(const geometry_msgs::PoseStampedConstPtr &pose)
   {
     boost::unique_lock<boost::shared_mutex> lockDeal(mutexReadPose);
     robotPose = *pose;
-    // ui_.robot_pose_x->setValue(robotPose.pose.pose.position.x);
-    // ui_.robot_pose_y->setValue(robotPose.pose.pose.position.y);
   }
 
-  void RemoteControl::StateCallBack(const robot_state_msgs::robot_stateConstPtr data)
+  void RemoteControl::RemoteCmdCallBack(const std_msgs::HeaderConstPtr cmd_control)
   {
-    // ui_.curTask->setValue(data->current_task);
-    // ui_.battery->setValue(data->battery_capacity > 100 ? 100 : data->battery_capacity);
-    // ui_.warnning->setValue(data->warning_code);
-    // ui_.erroCode->setValue(data->error_code);
-    // ui_.ultrasonic->setValue(data->ultrasonicValue);
-    // ui_.chargeState->setValue(data->charge_state);
-    // ui_.speed->setValue(data->speed);
-    // ui_.radius->setValue(data->radius);
-    // ui_.putterHeight_2->setValue(data->putter_height);
-    robotState = *data;
-  }
+    uint32_t seq = cmd_control->seq;
+    std_msgs::Header cmd_copy = *cmd_control;
 
-  void RemoteControl::RemoteCmdCallBack(const std_msgs::HeaderConstPtr cmd)
-  {
+    switch (seq)
+    {
+    case NoCmd:
+      break;
+    case AGVInit:
+      on_agvInit_clicked(cmd_copy);
+      break;
+    case CorssUpLeft:
+    case CorssUpRight:
+    case CorssDownLeft:
+    case CorssDownRight:
+      on_cross_clicked(cmd_copy);
+      break;
+    case PutterSet:
+      on_crossSpeedSet_clicked(cmd_copy);
+      break;
+    case SetPathNode:
+      on_setGoal_clicked(cmd_copy);
+      break;
+    case StartNavigation:
+      on_startNavigation_clicked(cmd_copy);
+      break;
+    case StopNavigation:
+      on_stopNavigation_clicked(cmd_copy);
+      break;
+    case InsertNode:
+      on_insertNode_clicked(cmd_copy);
+      break;
+    case ConnectStart:
+      on_ConnectSet_clicked(cmd_copy);
+      break;
+    case DeleteStart:
+      on_deleteSet_clicked(cmd_copy);
+      break;
+    case ImportNodes:
+      on_importNode_clicked(cmd_copy);
+      break;
+    case SaveNodes:
+      on_saveNode_clicked(cmd_copy);
+      break;
+    case SetDir:
+      on_setDirection_clicked(cmd_copy);
+      break;
+    case SetCharge:
+      on_setCharge_clicked(cmd_copy);
+      break;
+    case StartCharge:
+      on_startCharge_clicked(cmd_copy);
+      break;
+    case StopCharge:
+      on_stopCharge_clicked(cmd_copy);
+      break;
+    case 19:
+      on_deleteNode_clicked(cmd_copy);
+      break;
+    case DebugLaser:
+      on_debugLaser_clicked(cmd_copy);
+      break;
+    default:
+      ROS_WARN("RemoteCmdCallBack: unknown seq %u (frame_id=%s)", seq, cmd_copy.frame_id.c_str());
+      break;
+    }
   }
 
   void RemoteControl::ClickPointCallBack(const geometry_msgs::PointStampedConstPtr point)
@@ -280,8 +316,52 @@ namespace remote_control
         }
       }
     }
+    if (connectFlag || deleteFlag)
+      pub_node_list();
+  }
 
-    pub_node_list();
+  void RemoteControl::on_deleteNode_clicked(std_msgs::Header &cmd_remote)
+  {
+    std::string node_name = cmd_remote.frame_id;
+    if (node_name == "")
+    {
+      ROS_WARN("deleteNode: node name empty");
+      return;
+    }
+
+    for (auto &node_pair : nodeList)
+    {
+      auto &connect_nodes = node_pair.second.connect_node;
+      for (auto it = connect_nodes.begin(); it != connect_nodes.end();)
+      {
+        if (*it == node_name)
+        {
+          it = connect_nodes.erase(it);
+        }
+        else
+        {
+          ++it;
+        }
+      }
+    }
+    auto node_it = nodeList.find(node_name);
+    if (node_it != nodeList.end())
+    {
+      auto erase_begin = std::remove_if(line_lists.begin(), line_lists.end(),
+                                        [&node_name](const std::pair<std::string, std::string> &line_pair)
+                                        {
+                                          return (line_pair.first == node_name) || (line_pair.second == node_name);
+                                        });
+
+      line_lists.erase(erase_begin, line_lists.end());
+      nodeList.erase(node_it);
+      pub_node_list();
+      ROS_INFO("deleteNode: deleted node %s", node_name.c_str());
+    }
+    else
+    {
+      ROS_WARN("deleteNode: node %s not found in nodeList", node_name.c_str());
+    }
   }
 
   void RemoteControl::disconnect_two_points(std::string first, std::string second)
@@ -316,458 +396,242 @@ namespace remote_control
     }
   }
 
-  /*
-  void RemoteControl::on_MapBuildStart_clicked(std_msgs::Header &cmd_remote)
+  void RemoteControl::on_setGoal_clicked(std_msgs::Header &cmd_remote)
   {
-    robot_task_msgs::robot_keep_task_send send;
-    send.type = MAP_BUILD;
-    pubKeepTask.publish(send);
-    // ui_.MapBuildStart->setEnabled(false);
-    // ui_.SaveMap->setEnabled(true);
-    // ui_.MapBUildStop->setEnabled(true);
-    // ui_.LocationStart->setEnabled(false);
-    // ui_.LocationStop->setEnabled(false);
-  }
-
-  void RemoteControl::on_SaveMap_clicked(std_msgs::Header &cmd_remote)
-  {
-    robot_task_msgs::robot_one_task_send send;
-    send.type = MAP_SAVE;
-    pubOneTask.publish(send);
-    // ui_.MapBuildStart->setEnabled(false);
-    // ui_.SaveMap->setEnabled(false);
-    // ui_.MapBUildStop->setEnabled(true);
-    // ui_.LocationStart->setEnabled(false);
-    // ui_.LocationStop->setEnabled(false);
-  }
-
-  void RemoteControl::on_MapBUildStop_clicked(std_msgs::Header &cmd_remote)
-  {
-    robot_task_msgs::robot_one_task_send send;
-    send.type = MAP_STOP_BUILD;
-    pubOneTask.publish(send);
-    // ui_.MapBUildStop->setEnabled(false);
-    // sleep(2);
-    // ui_.MapBuildStart->setEnabled(true);
-    // ui_.SaveMap->setEnabled(false);
-    // ui_.LocationStart->setEnabled(true);
-    // ui_.LocationStop->setEnabled(false);
-  }
-
-  void RemoteControl::on_LocationStart_clicked(std_msgs::Header &cmd_remote)
-  {
-    robot_task_msgs::robot_keep_task_send send;
-    send.type = LOCATION_START;
-    pubKeepTask.publish(send);
-    // ui_.MapBuildStart->setEnabled(false);
-    // ui_.SaveMap->setEnabled(false);
-    // ui_.MapBUildStop->setEnabled(false);
-    // ui_.LocationStart->setEnabled(false);
-    // ui_.LocationStop->setEnabled(true);
-  }
-
-  void RemoteControl::on_LocationStop_clicked(std_msgs::Header &cmd_remote)
-  {
-    robot_task_msgs::robot_one_task_send send;
-    send.type = LOCATION_STOP;
-    pubOneTask.publish(send);
-    // ui_.LocationStop->setEnabled(false);
-    // sleep(2);
-    // ui_.MapBuildStart->setEnabled(true);
-    // ui_.SaveMap->setEnabled(false);
-    // ui_.MapBUildStop->setEnabled(false);
-    // ui_.LocationStart->setEnabled(true);
-  }
-
-  */
-}
-
-void remote_control::RemoteControl::on_robot_go_pressed()
-{
-  cmd.task_type = 2;
-  cmd.running.type = 1;
-  cmd.running.speed = 0.1;
-  cmd.running.radius = 0;
-  robotMoveFlag = true;
-}
-
-void remote_control::RemoteControl::on_robot_back_pressed()
-{
-  cmd.task_type = 2;
-  cmd.running.type = 1;
-  cmd.running.speed = -0.1;
-  cmd.running.radius = 0;
-
-  robotMoveFlag = true;
-}
-
-void remote_control::RemoteControl::on_robot_right_pressed()
-{
-  cmd.task_type = 2;
-  cmd.running.type = 1;
-  cmd.running.speed = 0;
-  cmd.running.radius = 0.1;
-
-  robotMoveFlag = true;
-}
-
-void remote_control::RemoteControl::on_robot_left_pressed()
-{
-  cmd.task_type = 2;
-  cmd.running.type = 1;
-  cmd.running.speed = 0;
-  cmd.running.radius = -0.1;
-
-  robotMoveFlag = true;
-}
-
-void remote_control::RemoteControl::on_robot_go_released()
-{
-  robotMoveFlag = false;
-}
-
-void remote_control::RemoteControl::on_robot_back_released()
-{
-  robotMoveFlag = false;
-}
-
-void remote_control::RemoteControl::on_robot_left_released()
-{
-  robotMoveFlag = false;
-}
-
-void remote_control::RemoteControl::on_robot_right_released()
-{
-  robotMoveFlag = false;
-}
-
-/**************************************************************/
-
-void remote_control::RemoteControl::on_setGoal_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_goal goal;
-  goal.name = cmd_remote.frame_id;
-  goal.pose = nodeList[goal.name].pose;
-  // goal.putter_hight = ui_.putterTaskHeight->value();
-  // goal.cross_type = ui_.crossBox->currentIndex();
-  // ui_.goal_pose_x->setValue(goal.pose.position.x);
-  // ui_.goal_pose_y->setValue(goal.pose.position.y);
-
-  pubGoalSend.publish(goal);
-}
-
-void remote_control::RemoteControl::on_insertNode_clicked(std_msgs::Header &cmd_remote)
-{
-  std::string node_name = cmd_remote.frame_id;
-  if (node_name == "")
-  {
-    ROS_WARN("Node name cannot be empty!");
-    return;
-  }
-
-  nodeList[node_name].pose = robotPose.pose.pose;
-  pub_node_list();
-}
-
-void remote_control::RemoteControl::on_nodeClear_clicked(std_msgs::Header &cmd_remote)
-{
-  nodeList.clear();
-  line_lists.clear();
-  pub_node_list();
-}
-
-void remote_control::RemoteControl::on_importNode_clicked(std_msgs::Header &cmd_remote)
-{
-  import_nodes(cmd_remote.frame_id);
-}
-
-void remote_control::RemoteControl::import_nodes(std::string fileName)
-{
-  if (fileName == "")
-  {
-    ROS_WARN("fileName is empty!");
-    return;
-  }
-  else
-  {
-    std::ifstream ifs;
-    ifs.open(fileName);
-    assert(ifs.is_open());
-
-    Json::Reader reader;
-    Json::Value list;
-
-    if (!reader.parse(ifs, list, false))
+    std::string goal_name = cmd_remote.frame_id;
+    if (goal_name == "")
     {
+      ROS_WARN("setGoal: goal name empty");
       return;
     }
-    int size = list.size();
 
-    // ui_.comboBox->clear();
+    robot_task_msgs::robot_goal goal;
+    goal.name = goal_name;
+    goal.pose = nodeList[goal.name].pose;
+    pubGoalSend.publish(goal);
+  }
+
+  void RemoteControl::on_insertNode_clicked(std_msgs::Header &cmd_remote)
+  {
+    std::string node_name = cmd_remote.frame_id;
+    if (node_name == "")
+    {
+      ROS_WARN("insertNode: node name empty");
+      return;
+    }
+    nodeList[node_name].pose = robotPose.pose;
+    pub_node_list();
+  }
+
+  void RemoteControl::on_nodeClear_clicked(std_msgs::Header &cmd_remote)
+  {
     nodeList.clear();
     line_lists.clear();
-    for (int i = 0; i < size; ++i)
-    {
-      std::string name = list[i]["name"].asString();
-      nodeList[name].name = name;
-      nodeList[name].pose = convert_pose_to_json(list[i]);
-      nodeList[name].cross_type = list[i]["cross_type"].asUInt();
-      nodeList[name].putter_hight = list[i]["putter_hight"].asUInt();
-      nodeList[name].is_charge = list[i]["is_charge"].asBool();
-      nodeList[name].dir_type = list[i]["dir_type"].asUInt();
-      for (int j = 0; j < list[i]["connect_node"].size(); ++j)
-      {
-        nodeList[name].connect_node.push_back(list[i]["connect_node"][j].asString());
-        std::pair<std::string, std::string> connectPoint;
-        connectPoint.first = name;
-        connectPoint.second = list[i]["connect_node"][j].asString();
-        line_lists.push_back(connectPoint);
-      }
-      nodeList[name].putter_hight = list[i]["putter_hight"].asUInt();
-      // ui_.comboBox->addItem(QString::fromStdString(name));
-    }
-    ROS_INFO("node num: %ld", size);
     pub_node_list();
   }
-}
 
-void remote_control::RemoteControl::import_nodes(void)
-{
-  std::string fileName; //= workspace_path + "/install/nodes/my.json";
-  if (fileName == "")
+  void RemoteControl::on_importNode_clicked(std_msgs::Header &cmd_remote)
   {
-    return;
+
+    import_nodes(node_file);
   }
-  else
+
+  void RemoteControl::import_nodes(std::string fileName)
   {
-    std::ifstream ifs;
-    ifs.open(fileName);
-    assert(ifs.is_open());
-
-    Json::Reader reader;
-    Json::Value list;
-
-    if (!reader.parse(ifs, list, false))
+    if (fileName == "")
     {
+      ROS_WARN("fileName is empty!");
       return;
     }
-    int size = list["data"].size();
+    else
+    {
+      std::ifstream ifs;
+      ifs.open(fileName);
+      assert(ifs.is_open());
 
-    // ui_.comboBox->clear();
-    // nodeList.clear();
-    // line_lists.clear();
-    // for (int i = 0; i < size; ++i)
-    // {
-    //   std::string name = list["data"][i]["navigation_id"].asString();
-    //   nodeList[name].name = name;
-    //   nodeList[name].pose.position.x = list["data"][i]["point_x"].asFloat();
-    //   nodeList[name].pose.position.y = list["data"][i]["point_y"].asFloat();
-    //   nodeList[name].pose.orientation = tf::createQuaternionMsgFromYaw(list["data"][i]["point_theta"].asFloat());
-    //   ui_.comboBox->addItem(QString::fromStdString(name));
-    // }
+      Json::Reader reader;
+      Json::Value list;
 
+      if (!reader.parse(ifs, list, false))
+      {
+        return;
+      }
+      int size = list.size();
+
+      nodeList.clear();
+      line_lists.clear();
+      for (int i = 0; i < size; ++i)
+      {
+        std::string name = list[i]["name"].asString();
+        nodeList[name].name = name;
+        nodeList[name].pose = convert_pose_to_json(list[i]);
+        nodeList[name].cross_type = list[i]["cross_type"].asUInt();
+        nodeList[name].putter_hight = list[i]["putter_hight"].asUInt();
+        nodeList[name].is_charge = list[i]["is_charge"].asBool();
+        nodeList[name].dir_type = list[i]["dir_type"].asUInt();
+        for (int j = 0; j < list[i]["connect_node"].size(); ++j)
+        {
+          nodeList[name].connect_node.push_back(list[i]["connect_node"][j].asString());
+          std::pair<std::string, std::string> connectPoint;
+          connectPoint.first = name;
+          connectPoint.second = list[i]["connect_node"][j].asString();
+          line_lists.push_back(connectPoint);
+        }
+        nodeList[name].putter_hight = list[i]["putter_hight"].asUInt();
+      }
+      ROS_INFO("node num: %ld", size);
+      pub_node_list();
+    }
+  }
+
+  void RemoteControl::on_saveNode_clicked(std_msgs::Header &cmd_remote)
+  {
+
+    Json::FastWriter writer;
+    Json::Value root;
+
+    for (std::map<std::string, robot_task_msgs::robot_goal>::iterator it = nodeList.begin(); it != nodeList.end(); ++it)
+    {
+      Json::Value node;
+      node["name"] = it->first;
+      node["pose"] = convert_pose_to_json(it->second.pose);
+      node["cross_type"] = it->second.cross_type;
+      node["putter_hight"] = it->second.putter_hight;
+      node["is_charge"] = it->second.is_charge;
+      node["dir_type"] = it->second.dir_type;
+      for (int i = 0; i < it->second.connect_node.size(); i++)
+      {
+        node["connect_node"].append(it->second.connect_node[i]);
+      }
+      root.append(node);
+    }
+    std::string json_file = writer.write(root);
+
+    std::ofstream ofs;
+    ofs.open(node_file);
+    assert(ofs.is_open());
+    ofs << json_file;
+    ofs.close();
+    ROS_INFO("save nodes to %s", node_file.c_str());
+  }
+
+  void RemoteControl::on_stopNavigation_clicked(std_msgs::Header &cmd_remote)
+  {
+    robot_task_msgs::robot_navigation_cmd navigationStop;
+    navigationStop.cmd_type = 0;
+    pubNavigationStart.publish(navigationStop);
+  }
+
+  void RemoteControl::on_startNavigation_clicked(std_msgs::Header &cmd_remote)
+  {
+    robot_task_msgs::robot_navigation_cmd navigationStart;
+    navigationStart.cmd_type = 1;
+    pubNavigationStart.publish(navigationStart);
+  }
+
+  void RemoteControl::on_clearPath_clicked(std_msgs::Header &cmd_remote)
+  {
+    robot_task_msgs::robot_navigation_cmd navigationClear;
+    navigationClear.cmd_type = 2;
+    pubNavigationStart.publish(navigationClear);
+  }
+
+  void RemoteControl::on_cross_clicked(std_msgs::Header &cmd_remote)
+  {
+    cmd.task_type = 0x0D;
+    cmd.cross.type = 1;
+    pubRobotCmd.publish(cmd);
+  }
+
+  void RemoteControl::on_crossSpeedSet_clicked(std_msgs::Header &cmd_remote)
+  {
+    cmd.task_type = 0x0E;
+    pubRobotCmd.publish(cmd);
+  }
+
+  void RemoteControl::on_startCharge_clicked(std_msgs::Header &cmd_remote)
+  {
+    robot_task_msgs::robot_navigation_cmd navigationStart;
+    navigationStart.cmd_type = 3;
+    pubNavigationStart.publish(navigationStart);
+    ROS_INFO("on_startCharge_clicked: publish start charge cmd");
+  }
+
+  void RemoteControl::on_stopCharge_clicked(std_msgs::Header &cmd_remote)
+  {
+    robot_task_msgs::robot_navigation_cmd navigationStart;
+    navigationStart.cmd_type = 4;
+    pubNavigationStart.publish(navigationStart);
+  }
+
+  void RemoteControl::on_setCharge_clicked(std_msgs::Header &cmd_remote)
+  {
+    std::string name = cmd_remote.frame_id;
+    if (name.empty())
+    {
+      ROS_WARN("setCharge: name empty");
+      return;
+    }
+    for (std::map<std::string, robot_task_msgs::robot_goal>::iterator it = nodeList.begin(); it != nodeList.end(); ++it)
+    {
+      if (it->second.name == name)
+        it->second.is_charge = !it->second.is_charge;
+      else
+        it->second.is_charge = false;
+    }
+    ROS_INFO("setCharge: %s is_charge=%d", name.c_str(), nodeList[name].is_charge);
     pub_node_list();
   }
-}
 
-void remote_control::RemoteControl::import_edges(void)
-{
-  // QString fileName = workspace_path + "/install/nodes/robot_navigation_edges.json";
-  // if (fileName == "")
-  // {
-  //   return;
-  // }
-  // else
-  // {
-  //   std::ifstream ifs;
-  //   ifs.open(fileName.toStdString());
-  //   assert(ifs.is_open());
-
-  //   Json::Reader reader;
-  //   Json::Value list;
-
-  //   if (!reader.parse(ifs, list, false))
-  //   {
-  //     return;
-  //   }
-  //   int size = list["data"].size();
-
-  //   line_lists.clear();
-  //   for (int i = 0; i < size; ++i)
-  //   {
-  //     std::string start = list["data"][i]["start_id"].asString();
-  //     std::string end = list["data"][i]["end_id"].asString();
-  //     nodeList[start].connect_node.push_back(end);
-  //     nodeList[end].connect_node.push_back(start);
-  //     std::pair<std::string, std::string> connectPoint;
-  //     connectPoint.first = start;
-  //     connectPoint.second = end;
-  //     line_lists.push_back(connectPoint);
-  //   }
-
-  //   pub_node_list();
-  // }
-}
-
-void remote_control::RemoteControl::on_saveNode_clicked(std_msgs::Header &cmd_remote)
-{
-  std::string fileName = cmd_remote.frame_id;
-  if (fileName == "")
+  void RemoteControl::on_agvInit_clicked(std_msgs::Header &cmd_remote)
   {
-    return;
+    cmd.task_type = 0x04;
+    pubRobotCmd.publish(cmd);
   }
 
-  Json::FastWriter writer;
-  Json::Value root;
-
-  for (std::map<std::string, robot_task_msgs::robot_goal>::iterator it = nodeList.begin(); it != nodeList.end(); ++it)
+  void RemoteControl::on_ConnectSet_clicked(std_msgs::Header &cmd_remote)
   {
-    Json::Value node;
-    node["name"] = it->first;
-    node["pose"] = convert_pose_to_json(it->second.pose);
-    node["cross_type"] = it->second.cross_type;
-    node["putter_hight"] = it->second.putter_hight;
-    node["is_charge"] = it->second.is_charge;
-    node["dir_type"] = it->second.dir_type;
-    for (int i = 0; i < it->second.connect_node.size(); i++)
+    deleteFlag = false;
+    firstDeleteFlag = false;
+
+    connectFlag = !connectFlag;
+    if (connectFlag)
+      firstConnectFlag = true;
+
+    ROS_INFO("on_ConnectSet_clicked: connectFlag=%d", connectFlag);
+  }
+
+  void RemoteControl::on_deleteSet_clicked(std_msgs::Header &cmd_remote)
+  {
+    connectFlag = false;
+    firstConnectFlag = false;
+
+    deleteFlag = !deleteFlag;
+    if (deleteFlag)
+      firstDeleteFlag = true;
+    ROS_INFO("on_deleteSet_clicked: deleteFlag=%d", deleteFlag);
+  }
+
+  void RemoteControl::on_setDirection_clicked(std_msgs::Header &cmd_remote)
+  {
+    std::string name = cmd_remote.frame_id;
+    if (name.empty())
     {
-      node["connect_node"].append(it->second.connect_node[i]);
+      ROS_WARN("setDirection: name empty");
+      return;
     }
-    root.append(node);
+    nodeList[name].dir_type = nodeList[name].dir_type == 0 ? 1 : 0;
+    pub_node_list();
   }
-  std::string json_file = writer.write(root);
-
-  std::ofstream ofs;
-  ofs.open(fileName + ".json");
-  assert(ofs.is_open());
-  ofs << json_file;
-}
-
-void remote_control::RemoteControl::on_comboBox_currentIndexChanged()
-{
-  // ui_.putterTaskHeight->setValue(nodeList[arg1.toStdString()].putter_hight);
-  // ui_.crossBox->setCurrentIndex(nodeList[arg1.toStdString()].cross_type);
-}
-
-void remote_control::RemoteControl::on_stopNavigation_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_navigation_cmd navigationStop;
-  navigationStop.cmd_type = 0;
-  pubNavigationStart.publish(navigationStop);
-}
-
-void remote_control::RemoteControl::on_startNavigation_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_navigation_cmd navigationStart;
-  navigationStart.cmd_type = 1;
-  pubNavigationStart.publish(navigationStart);
-}
-
-void remote_control::RemoteControl::on_clearPath_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_navigation_cmd navigationClear;
-  navigationClear.cmd_type = 2;
-  pubNavigationStart.publish(navigationClear);
-}
-
-/**************************************************************/
-
-// void remote_control::RemoteControl::on_putterSet_clicked(std_msgs::Header &cmd_remote)
-//{
-//   cmd.task_type = 0x0E;
-//   //cmd.putter.hight = ui_.putterHeight->value();
-//   pubRobotCmd.publish(cmd);
-// }
-
-// void remote_control::RemoteControl::on_putterInit_clicked(std_msgs::Header &cmd_remote)
-//{
-//   cmd.task_type = 0x0F;
-//   pubRobotCmd.publish(cmd);
-// }
-
-void remote_control::RemoteControl::on_crossUp_clicked(std_msgs::Header &cmd_remote)
-{
-  cmd.task_type = 0x0D;
-  cmd.cross.type = 1;
-  pubRobotCmd.publish(cmd);
-}
-
-void remote_control::RemoteControl::on_crossDown_clicked(std_msgs::Header &cmd_remote)
-{
-  cmd.task_type = 0x0D;
-  cmd.cross.type = 2;
-  pubRobotCmd.publish(cmd);
-}
-
-void remote_control::RemoteControl::on_crossSpeedSet_clicked(std_msgs::Header &cmd_remote)
-{
-  // cmd.task_type = 0x0D;
-  // cmd.cross.type = 0;
-  // cmd.cross.speed = ui_.crossSpeed->value() / 1000.0f;
-  // pubRobotCmd.publish(cmd);
-  cmd.task_type = 0x0E;
-  // cmd.putter.hight = std::(cmd_remote.frame_id);
-  pubRobotCmd.publish(cmd);
-}
-
-void remote_control::RemoteControl::on_startCharge_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_navigation_cmd navigationStart;
-  navigationStart.cmd_type = 3;
-  pubNavigationStart.publish(navigationStart);
-}
-
-void remote_control::RemoteControl::on_stopCharge_clicked(std_msgs::Header &cmd_remote)
-{
-  robot_task_msgs::robot_navigation_cmd navigationStart;
-  navigationStart.cmd_type = 4;
-  pubNavigationStart.publish(navigationStart);
-}
-
-void remote_control::RemoteControl::on_setCharge_clicked(std_msgs::Header &cmd_remote)
-{
-  std::string name = cmd_remote.frame_id; // ui_.comboBox->currentText().toStdString();
-  for (std::map<std::string, robot_task_msgs::robot_goal>::iterator it = nodeList.begin(); it != nodeList.end(); ++it)
+  void RemoteControl::on_debugLaser_clicked(std_msgs::Header &cmd_remote)
   {
-    if (it->second.name == name)
-      it->second.is_charge = !it->second.is_charge;
-    else
-      it->second.is_charge = false;
+    static bool debug_flag = false;
+    debug_flag = !debug_flag;
+    std_msgs::Int8 debug_cmd;
+    debug_cmd.data = debug_flag ? 1 : 0;
+    pubDebugLaser.publish(debug_cmd);
+    ROS_INFO("on_debugLaser_clicked: debug_flag=%d", debug_flag);
   }
-  pub_node_list();
-}
-
-void remote_control::RemoteControl::on_agvInit_clicked(std_msgs::Header &cmd_remote)
-{
-  cmd.task_type = 0x04;
-  pubRobotCmd.publish(cmd);
-}
-
-void remote_control::RemoteControl::on_ConnectSet_clicked(std_msgs::Header &cmd_remote)
-{
-  deleteFlag = false;
-  firstDeleteFlag = false;
-
-  connectFlag = !connectFlag;
-  if (connectFlag)
-    firstConnectFlag = true;
-}
-
-void remote_control::RemoteControl::on_deleteSet_clicked(std_msgs::Header &cmd_remote)
-{
-  connectFlag = false;
-  firstConnectFlag = false;
-
-  deleteFlag = !deleteFlag;
-  if (deleteFlag)
-    firstDeleteFlag = true;
-}
-
-void remote_control::RemoteControl::on_setDirection_clicked(std_msgs::Header &cmd_remote)
-{
-  std::string name = cmd_remote.frame_id;
-  nodeList[name].dir_type = nodeList[name].dir_type == 0 ? 1 : 0;
-  pub_node_list();
 }
 
 int main(int argc, char **argv)

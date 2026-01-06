@@ -1,6 +1,9 @@
 <launch>
    <node pkg="robot_pose_publisher" type="robot_pose_publisher" respawn="true" name="robot_pose_publisher_node" output="screen">
       <param name="is_stamped" value="true" />
+      <param name="map_frame" value="map" />
+      <param name="base_frame" value="base_link" />
+      <param name="publish_frequency" value="20.0" />
       <remap from="robot_pose" to="robot_pose" />
    </node>
    

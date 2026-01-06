@@ -1,3 +1,10 @@
 <launch>
-   <node pkg="laser_avoidance" type="laser_avoidance_node" name="laser_avoidance_node" output="screen" respawn="true"/>
+   <node pkg="laser_avoidance" type="laser_avoidance_node" name="laser_avoidance_node" output="screen" respawn="true">
+       <param name="file_name" value="$(find laser_avoidance)/config/laser_avoidance_param.yaml" />
+       <param name="adjust_debug" value="false" />
+       <param name="max_fitter" value="900" />
+       <param name="offset" value="0.11" />
+       <param name="min_range" value="0.1" />
+       <param name="max_range" value="1.0" />
+   </node>
 </launch>

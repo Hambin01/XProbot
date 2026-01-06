@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(boxs_obstacle)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -18,11 +18,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Find system libraries
 #find_package(PCL REQUIRED)
-set(EIGEN3_INCLUDE_DIR /usr/include/eigen3)
+#set(EIGEN3_INCLUDE_DIR /usr/include/eigen3)
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp sensor_msgs visualization_msgs tf2_ros tf2_geometry_msgs tf2_eigen pcl_ros pcl_conversions
   DEPENDS PCL EIGEN3
@@ -61,4 +60,13 @@ target_link_libraries(boxs_obstacle
 ## Install the executable
 install(TARGETS boxs_obstacle
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(DIRECTORY launch
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+install(DIRECTORY config
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+install(DIRECTORY rviz
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

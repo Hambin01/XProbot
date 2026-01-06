@@ -31,7 +31,6 @@
 
 #include <motion_control/motion_control_cfgConfig.h>
 #include "dynamic_reconfigure/server.h"
-#include <motion_control/glog_util.hpp>
 #include <actionlib/server/simple_action_server.h>
 #include <motion_control/robotNavAction.h>
 #include <motion_control/robotNavResult.h>
@@ -72,9 +71,6 @@ namespace navigation
     ros::Publisher navigation_speed_publisher_;
     ros::Publisher adjust_cmd_publisher_;
 
-    kalman::OneKalmanClass k_angle;
-    kalman::OneKalmanClass k_dis;
-    kalman::OneKalmanClass k_t_dis;
     pid::PidClass pidCal;
     float kt;
     float acc;

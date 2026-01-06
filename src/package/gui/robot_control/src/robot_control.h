@@ -20,7 +20,7 @@
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PointStamped.h>
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 #include <QFileDialog>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>

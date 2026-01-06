@@ -24,7 +24,6 @@ generate_dynamic_reconfigure_options(
 
 ## Declare catkin package (REMOVE yaml-cpp from CATKIN_DEPENDS)
 catkin_package(
-  INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp tf2 tf2_ros visualization_msgs geometry_msgs dynamic_reconfigure
 
 )
@@ -58,13 +57,12 @@ install(TARGETS link_visual
 )
 
 
-# install(DIRECTORY launch/
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch/
-#   # FILES_MATCHING PATTERN "*.h"
-#   # PATTERN ".svn" EXCLUDE
-# )
-# install(DIRECTORY rviz/
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rviz/
-#   # FILES_MATCHING PATTERN "*.h"
-#   # PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY launch
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+install(DIRECTORY config
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+install(DIRECTORY rviz
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

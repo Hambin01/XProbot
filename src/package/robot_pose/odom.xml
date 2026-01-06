@@ -1,9 +1,0 @@
-<library path="libcloud_to_img_lib">
-  <class name="cloud_to_img/CloudToImageNodelet"
-         type="cloud_to_img::CloudToImageNodelet"
-         base_class_type="nodelet::Nodelet">
-    <description>
-      cloud_to_img.
-    </description>
-  </class>
-</library>

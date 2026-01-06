@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(robot_control)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
-set(WORKING_DIR $ENV{HOME}/ROBOT_INDOOR)
+set(WORKING_DIR $ENV{HOME}/XProbot)
 message("work_dir = ${WORKING_DIR}")
 add_definitions(-DWork_Path="${WORKING_DIR}")
 find_package(catkin REQUIRED COMPONENTS rviz robot_state_msgs)

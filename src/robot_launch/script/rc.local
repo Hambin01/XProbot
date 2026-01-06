@@ -1,0 +1,17 @@
+#!/bin/bash
+
+exec 2> /home/robot/.log.log
+exec 1>&2
+set -x
+
+export TZ=Asia/Shanghai
+export ROS_DISTRO=noetic
+export ROSCONSOLE_CONFIG_FILE=/dev/null
+export PATH=/opt/ros/$ROS_DISTRO/bin:$PATH
+export LD_LIBRARY_PATH=/opt/ros/$ROS_DISTRO/lib:$LD_LIBRARY_PATH
+source /opt/ros/$ROS_DISTRO/setup.bash
+source /home/robot/XProbot/install/setup.bash
+
+#bash /home/robot/leapting_robot/script/start.bash
+
+exit 0

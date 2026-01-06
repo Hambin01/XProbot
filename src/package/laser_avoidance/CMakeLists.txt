@@ -3,16 +3,9 @@ project(laser_avoidance)
 
 # Set c++11 cmake flags
 set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
+ADD_COMPILE_OPTIONS(-std=c++17 )
 
 add_definitions(-DOPENMP)
-
-set(WORKING_DIR $ENV{HOME}/ROBOT_INDOOR)
-message("work_dir = ${WORKING_DIR}")
-add_definitions(-DWork_Path="${WORKING_DIR}")
-
-# Find rquired packeges
-set(OpenCV_DIR /usr/local/share/OpenCV/)
-find_package(OpenCV)
 
 find_package(Boost REQUIRED COMPONENTS thread)
 find_package(catkin  REQUIRED
@@ -31,7 +24,6 @@ find_package(catkin  REQUIRED
     robot_state_msgs
 )
 
-add_definitions(-O4 -g)
 
 # 生成对应的devel/lib里面的可执行程序
 catkin_package(
@@ -42,8 +34,6 @@ include_directories(
   include
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-  ${WORKING_DIR}/src/util/transform_util
 )
 
 # 设置库链接路径
@@ -64,7 +54,6 @@ target_link_libraries(laser_avoidance_node
   stdc++
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
 )
 
 

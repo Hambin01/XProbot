@@ -1,18 +1,6 @@
 %YAML:1.0
 ---
 
-avoidance_enable: 1
-
-robot_width: 0.3           
-robot_length: 0.4
-robot_center_to_front: 0.2
-
-front_avoid_padding: 0.2
-behind_avoid_padding: 0
-
-left_avoid_padding: 0.2
-right_avoid_padding: 0.2
-
 adjust_debug: 0
 max_fitter: 900
 offset: 0.11

@@ -6,10 +6,6 @@ set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 
 add_definitions(-DOPENMP)
 
-set(WORKING_DIR $ENV{HOME}/ROBOT_INDOOR)
-message("work_dir = ${WORKING_DIR}")
-add_definitions(-DWork_Path="${WORKING_DIR}")
-
 # Find rquired packeges
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -58,14 +54,8 @@ include_directories(
   config
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  ${WORKING_DIR}/src/util/transform_util
-  ${WORKING_DIR}/src/lib/jsoncpp/include
 )
 
-
-link_directories(
-  ${WORKING_DIR}/install/lib/jsoncpp/lib
-)
 
 add_library(${PROJECT_NAME}
     src/navigation_plan.cpp
@@ -77,7 +67,6 @@ target_link_libraries(${PROJECT_NAME}
   stdc++
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-  glog
   libjsoncpp.so
 )
 

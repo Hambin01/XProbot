@@ -6,9 +6,6 @@ set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 
 add_definitions(-DOPENMP)
 
-set(WORKING_DIR $ENV{HOME}/ROBOT_INDOOR)
-message("work_dir = ${WORKING_DIR}")
-add_definitions(-DWork_Path="${WORKING_DIR}")
 
 # Find rquired packeges
 
@@ -45,12 +42,8 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${WORKING_DIR}/src/util/transform_util
-  ${WORKING_DIR}/src/lib/jsoncpp/include
 )
-link_directories(
-  ${WORKING_DIR}/install/lib/jsoncpp/lib
-)
+
 
 
 add_executable(remote_control_node src/remote_control.cpp)
@@ -58,4 +51,15 @@ add_dependencies(remote_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 target_link_libraries(remote_control_node
   ${catkin_LIBRARIES}
   libjsoncpp.so
+)
+
+install(TARGETS remote_control
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(DIRECTORY launch
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(DIRECTORY include
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

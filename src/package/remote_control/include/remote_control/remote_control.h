@@ -7,18 +7,17 @@
 
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Header.h>
+#include <std_msgs/Int8.h>
 #include <robot_state_msgs/robot_state.h>
 #include <robot_state_msgs/data_to_stm32.h>
 #include <robot_state_msgs/charge_action.h>
 #include <robot_state_msgs/cross_action.h>
 #include <robot_state_msgs/putter_action.h>
 #include <robot_state_msgs/running_action.h>
-#include <robot_task_msgs/robot_keep_task_send.h>
-#include <robot_task_msgs/robot_one_task_send.h>
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PointStamped.h>
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
 #include <robot_task_msgs/robot_goal.h>
@@ -80,6 +79,8 @@ namespace remote_control
     SetCharge = 16,
     StartCharge = 17,
     StopCharge = 18,
+    DeleteNode = 19,
+    DebugLaser = 20
 
   } RemoteCmd;
 
@@ -92,29 +93,23 @@ namespace remote_control
   protected:
     ros::NodeHandle nh_;
 
-    ros::Publisher pubKeepTask;
-    ros::Publisher pubOneTask;
     ros::Publisher pubRobotCmd;
     ros::Publisher pubGoalSend;
     ros::Publisher pubNavigationStart;
     ros::Publisher pubNodeList;
     ros::Publisher pubGoalList;
+    ros::Publisher pubDebugLaser;
 
-    bool robotMoveFlag = false;
     bool robotChargeFlag = false;
-    int move_count = 0;
-    ros::Timer moveTimer;
     ros::Subscriber subRobotPose;
-    ros::Subscriber subRobotState;
     ros::Subscriber subClickPoint;
     ros::Subscriber subRemoteCmd;
 
     std::string node_file;
 
     boost::shared_mutex mutexReadPose;
-    robot_state_msgs::robot_state robotState;
     robot_state_msgs::data_to_stm32 cmd;
-    nav_msgs::Odometry robotPose;
+    geometry_msgs::PoseStamped robotPose;
     geometry_msgs::PoseStamped goal;
     std::map<std::string, robot_task_msgs::robot_goal> nodeList;
     std::vector<std::pair<std::string, std::string>> line_lists;
@@ -130,44 +125,22 @@ namespace remote_control
     bool firstDeleteFlag = false;
     void connect_two_points(visualization_msgs::Marker &line_list, geometry_msgs::Pose &p1, geometry_msgs::Pose &p2);
     void pub_node_list(void);
-    void CmdSet(const ros::TimerEvent &event);
-    void RobotPoseCallBack(const nav_msgs::OdometryConstPtr &pose);
-    void StateCallBack(const robot_state_msgs::robot_stateConstPtr data);
+    void RobotPoseCallBack(const geometry_msgs::PoseStampedConstPtr &pose);
     void ClickPointCallBack(const geometry_msgs::PointStampedConstPtr point);
-    void RemoteCmdCallBack(const std_msgs::HeaderConstPtr cmd);
+    void RemoteCmdCallBack(const std_msgs::HeaderConstPtr cmd_control);
     void disconnect_two_points(std::string first, std::string second);
-    void import_nodes(void);
-    void import_edges(void);
     void import_nodes(std::string fileName);
-
-    //  void on_MapBuildStart_clicked(std_msgs::Header &cmd_remote);
-    //  void on_SaveMap_clicked(std_msgs::Header &cmd_remote);
-    //  void on_MapBUildStop_clicked(std_msgs::Header &cmd_remote);
-    //  void on_LocationStart_clicked(std_msgs::Header &cmd_remote);
-    //  void on_LocationStop_clicked(std_msgs::Header &cmd_remote);
-
-    void on_robot_go_pressed();
-    void on_robot_back_pressed();
-    void on_robot_right_pressed();
-    void on_robot_left_pressed();
-    void on_robot_go_released();
-    void on_robot_back_released();
-    void on_robot_left_released();
-    void on_robot_right_released();
 
     void on_setGoal_clicked(std_msgs::Header &cmd_remote);
     void on_startNavigation_clicked(std_msgs::Header &cmd_remote);
     void on_insertNode_clicked(std_msgs::Header &cmd_remote);
     void on_nodeClear_clicked(std_msgs::Header &cmd_remote);
     void on_importNode_clicked(std_msgs::Header &cmd_remote);
+    void on_deleteNode_clicked(std_msgs::Header &cmd_remote);
     void on_saveNode_clicked(std_msgs::Header &cmd_remote);
     void on_stopNavigation_clicked(std_msgs::Header &cmd_remote);
-    void on_comboBox_currentIndexChanged();
 
-    //  void on_putterSet_clicked(std_msgs::Header &cmd_remote);
-    //  void on_putterInit_clicked(std_msgs::Header &cmd_remote);
-    void on_crossUp_clicked(std_msgs::Header &cmd_remote);
-    void on_crossDown_clicked(std_msgs::Header &cmd_remote);
+    void on_cross_clicked(std_msgs::Header &cmd_remote);
     void on_crossSpeedSet_clicked(std_msgs::Header &cmd_remote);
     void on_startCharge_clicked(std_msgs::Header &cmd_remote);
     void on_clearPath_clicked(std_msgs::Header &cmd_remote);
@@ -177,6 +150,7 @@ namespace remote_control
     void on_ConnectSet_clicked(std_msgs::Header &cmd_remote);
     void on_deleteSet_clicked(std_msgs::Header &cmd_remote);
     void on_setDirection_clicked(std_msgs::Header &cmd_remote);
+    void on_debugLaser_clicked(std_msgs::Header &cmd_remote);
   };
 
 }

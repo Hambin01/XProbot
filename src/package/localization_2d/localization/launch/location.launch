@@ -2,12 +2,9 @@
 <launch>
     <arg name="mapping" default="" />
 
-    <!-- <node pkg="tf" type="static_transform_publisher" name="lidar_to_base_link" args="0.25 0 0 0 0 0        base_link laser   20" /> -->
-
     <!--localization-->
     <group>
         <node name="world_map" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 world map 10.0" />
-
         <!--amcl-->
         <arg name="amcl_update_frequency" default="5.0" />
         <arg name="amcl_update_min_d" default="0.2" if="$(eval amcl_update_frequency == 0.0)" />
@@ -28,7 +25,7 @@
 
         <node name="amcl" pkg="amcl" type="amcl" output="screen">
             <remap from="initialpose" to="/initialpose" />
-            <remap from="scan" to="scan1"  />
+            <remap from="scan" to="scan"  />
             <rosparam subst_value="true">
             min_particles: 2000 #1000
             max_particles: 5000 #10000
@@ -57,7 +54,7 @@
         </node>
 
 
-        <!-- <node name="double_localization_manager" pkg="rosbridge_system" type="double_robot_localization.py" output="screen"  respawn="true" >
+        <node name="double_localization_manager" pkg="rosbridge_system" type="double_robot_localization.py" output="screen"  respawn="true" >
             <remap from="amcl_pose" to="amcl_pose" />
             <rosparam subst_value="true">
             amcl_supply_error: 0.1 #0.3
@@ -69,17 +66,17 @@
             jump: 1.0
             either_or: true
             </rosparam>
-        </node> -->
+        </node>
     </group>
     <!--mapping-->
     <node name="slam2_odom" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 slam odom 20" />
 
-    <!-- <node name="ekf_node_global" pkg="robot_localization" type="ekf_localization_node" clear_params="true"  >
+    <node name="ekf_node_global" pkg="robot_localization" type="ekf_localization_node" clear_params="true"  >
         <remap from="odometry/filtered" to="global_pose" />
         <remap from="set_pose" to="set_pose_global" />
         <rosparam command="load" file="$(find localization)/scripts/pose_ekf_global.yaml"/>
         <param name="publish_tf" value="true" />
-    </node> -->
+    </node>
 
     <!-- <node name="ekf_node_odom" pkg="robot_localization" type="ekf_localization_node" clear_params="true"  >
         <remap from="odometry/filtered" to="odom_ekf" />

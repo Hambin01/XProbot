@@ -298,7 +298,8 @@ namespace robot_control
       }
     }
 
-    pub_node_list();
+    if (connectFlag || deleteFlag)
+      pub_node_list();
   }
 
   void RobotControl::disconnect_two_points(std::string first, std::string second)

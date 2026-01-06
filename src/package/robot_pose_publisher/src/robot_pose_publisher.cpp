@@ -1,13 +1,4 @@
-/*!
- * \file robot_pose_publisher.cpp
- * \brief Publishes the robot's position in a geometry_msgs/Pose message.
- *
- * Publishes the robot's position in a geometry_msgs/Pose message based on the TF
- * difference between /map and /base_link.
- *
- * \author Russell Toris - rctoris@wpi.edu
- * \date April 3, 2014
- */
+
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
@@ -33,25 +24,19 @@ int main(int argc, char **argv)
   double publish_frequency, theta, tx, ty;
   bool is_stamped;
   ros::Publisher p_pub;
-  ros::Publisher m_pub;
 
   nh_priv.param<std::string>("map_frame", map_frame, "map");
   nh_priv.param<std::string>("base_frame", base_frame, "base_link");
   nh_priv.param<double>("publish_frequency", publish_frequency, 10);
   nh_priv.param<bool>("is_stamped", is_stamped, false);
-  nh_priv.param<double>("theta", theta, 1.574638580352546);
-  nh_priv.param<double>("tx", tx, 529667.4486326355);
-  nh_priv.param<double>("ty", ty, -1058191.578162379);
 
   if (is_stamped)
   {
     p_pub = nh.advertise<geometry_msgs::PoseStamped>("robot_pose", 1);
-    m_pub = nh.advertise<geometry_msgs::PoseStamped>("robot_pose_map", 1);
   }
   else
   {
     p_pub = nh.advertise<geometry_msgs::Pose>("robot_pose", 1);
-    m_pub = nh.advertise<geometry_msgs::Pose>("robot_pose_map", 1);
   }
   // create the listener
   tf::TransformListener listener;
@@ -83,20 +68,10 @@ int main(int argc, char **argv)
       if (is_stamped)
       {
         p_pub.publish(pose_stamped);
-        if (count >= 5)
-        {
-          m_pub.publish(pose_stamped);
-          count = 0;
-        }
       }
       else
       {
         p_pub.publish(pose_stamped.pose);
-        if (count >= 5)
-        {
-          m_pub.publish(pose_stamped.pose);
-          count = 0;
-        }
       }
       count++;
 

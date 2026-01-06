@@ -17,8 +17,6 @@ import tf
 import tf2_ros
 from std_msgs.msg import Header
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
-import zlib
-from median_player.msg import MedianPlayActionGoal
 
 
 rospy.init_node('double_localization_manager')
@@ -93,9 +91,6 @@ class Localization():
         self.pub_amcl_reflection = rospy.Publisher('amcl_pose_filtered_reflection',
                                                    PoseWithCovarianceStamped, latch=True, queue_size=1)
 
-        self.alertGoalPub = rospy.Publisher('alert/median_player_server/goal',
-                                            MedianPlayActionGoal,
-                                            queue_size=1)
         rospy.Subscriber("amcl_pose", PoseWithCovarianceStamped,
                          self.amcl_pose_cb, queue_size=1)
         rospy.Subscriber("initialpose", PoseWithCovarianceStamped,
@@ -134,21 +129,7 @@ class Localization():
             except:
                 rospy.logwarn('[DL] Failed to load special areas')
 
-            if rospy.get_param(rospy.get_namespace()+"rosbridge_system/use_flexbe", True):
-                BeLib = BehaviorLibrary()
-                self._check_num_dict = {}
-                for key in BeLib._behavior_lib:
-                    be_filepath_new = BeLib.get_sourcecode_filepath(key)
-                    with open(be_filepath_new, "r") as f:
-                        be_content_new = f.read()
-                        behavior_checksum = self.to_int16(
-                            zlib.adler32(be_content_new))
-                        self._check_num_dict[
-                            behavior_checksum] = BeLib._behavior_lib[key]['name']
-                rospy.Subscriber('flexbe/status',
-                                 BEStatus,
-                                 self.flexbeStatusCallback,
-                                 queue_size=10)
+        
 
     def flexbeStatusCallback(self, fStatusMsg):
         try:
@@ -217,10 +198,6 @@ class Localization():
                             self.pub_initial.publish(tag_pose_msg)
                             rospy.loginfo(
                                 '[DL] pose recovery by tag %s' % str(tag_id))
-                            alert_goal_msg = MedianPlayActionGoal()
-                            alert_goal_msg.goal.mode = "single"
-                            alert_goal_msg.goal.sound_id = 28
-                            self.alertGoalPub.publish(alert_goal_msg)
                         self._tag_pose_list.pop(0)
                 else:
                     self._tag_pose_list = []

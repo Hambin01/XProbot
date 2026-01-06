@@ -37,3 +37,14 @@ target_link_libraries(point_cloud_merger_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
+
+install(TARGETS point_cloud_merger
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(DIRECTORY launch
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(DIRECTORY rviz
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
