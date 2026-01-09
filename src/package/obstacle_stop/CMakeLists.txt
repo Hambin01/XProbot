@@ -24,12 +24,12 @@ catkin_package(
   INCLUDE_DIRS
   LIBRARIES
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs pcl_ros pcl_conversions
-  DEPENDS PCL
 )
 
 ## Build executable
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 add_executable(obstacle_stop_node src/obstacle_stop_node.cpp)
@@ -38,7 +38,7 @@ target_link_libraries(obstacle_stop_node
   ${PCL_LIBRARIES}
 )
 
-install(TARGETS obstacle_stop
+install(TARGETS obstacle_stop_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(DIRECTORY launch

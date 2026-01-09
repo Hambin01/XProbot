@@ -6,9 +6,6 @@ set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 
 add_definitions(-DOPENMP)
 
-set(WORKING_DIR $ENV{HOME}/ROBOT_INDOOR)
-message("work_dir = ${WORKING_DIR}")
-add_definitions(-DWork_Path="${WORKING_DIR}")
 
 # Find rquired packeges
 
@@ -76,14 +73,6 @@ include_directories(
   config
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  ${WORKING_DIR}/src/util/transform_util
-  ${PROJECT_SOURCE_DIR}/../../database/include
-)
-
-
-link_directories(
-  #${WORKING_DIR}/src/lib/yaml-0.5/build
-  ${PROJECT_SOURCE_DIR}/../../database/lib
 )
 
 add_library(${PROJECT_NAME}
@@ -96,7 +85,6 @@ target_link_libraries(${PROJECT_NAME}
   stdc++
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-  glog
 )
 
 add_executable(motion_control_node
@@ -108,11 +96,6 @@ target_link_libraries(motion_control_node
   ${PROJECT_NAME}
 )
 
-# add_dependencies(${PROJECT_NAME}_gencfg
-# )
-
-# add_dependencies(${PROJECT_NAME}_lib
-# )
 
 install(DIRECTORY
     launch

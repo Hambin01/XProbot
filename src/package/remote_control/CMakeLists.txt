@@ -53,7 +53,7 @@ target_link_libraries(remote_control_node
   libjsoncpp.so
 )
 
-install(TARGETS remote_control
+install(TARGETS remote_control_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(DIRECTORY launch

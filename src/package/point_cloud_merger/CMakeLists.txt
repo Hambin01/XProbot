@@ -24,12 +24,12 @@ catkin_package(
   INCLUDE_DIRS
   LIBRARIES
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs pcl_ros pcl_conversions
-  DEPENDS PCL
 )
 
 ## Build executable
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 add_executable(point_cloud_merger_node src/point_cloud_merger_node.cpp)
