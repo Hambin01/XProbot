@@ -1,0 +1,11 @@
+# 动作目标：仅保留动作类型
+int32 cross_type  # 0=NO_LOAD,1=UP_LOAD_RIGHT,2=UP_LOAD_LEFT,3=DOWN_LOAD_RIGHT,4=DOWN_LOAD_LEFT
+---
+# 动作结果
+bool success      # 执行是否成功
+string message    # 结果描述
+---
+# 动作反馈：移除count字段
+uint8 cross_state # 交叉带状态：0/1
+bool is_ok        # 传感器是否触发
+string status     # 执行状态描述（如"执行中"/"延迟中"）

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>relay_control</name>
+  <version>0.0.0</version>
+  <description>Relay control package for CANOpen digital I/O module</description>
+  <maintainer email="821022334@qq.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>socketcan_bridge</build_depend>
+  <build_depend>can_msgs</build_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>socketcan_bridge</exec_depend>
+  <exec_depend>can_msgs</exec_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>

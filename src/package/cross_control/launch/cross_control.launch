@@ -1,0 +1,28 @@
+<launch>
+    <node name="cross_control_node" pkg="cross_control" type="cross_control_node" output="screen">
+      <!-- 默认参数配置 -->
+      <param name="default_stop_time" value="2" />
+      <param name="default_delay_time" value="1" />
+      <param name="default_set_speed" value="500" />
+      
+      <!-- CANopen SDO参数 -->
+      <param name="motor_sdo_cob_id" value="0x601" />
+      <param name="speed_sdo_index" value="0x2000" />
+      <param name="speed_sdo_subindex" value="0x01" />
+
+      <!-- 电机初始化/掉线检测参数 -->
+      <param name="motor_node_id" value="1" />                <!-- 电机CANopen节点ID -->
+      <param name="can_timeout_ms" value="1000" />            <!-- CAN超时时间（ms） -->
+      <param name="max_recovery_attempts" value="3" />        <!-- 最大恢复尝试次数 -->
+   </node>
+  
+   <!-- <node name="can_base_driver" pkg="socketcan_bridge" type="socketcan_bridge_node" respawn="true" output="screen">
+      <param name="can_device" value="vcan0" />
+      <rosparam>
+         can_ids:
+               - 0x581
+      </rosparam>
+      <remap from="sent_messages" to="send_can_message_relay" />
+      <remap from="received_messages" to="received_can_message_relay" />
+    </node> -->
+</launch>

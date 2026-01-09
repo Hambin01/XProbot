@@ -7,8 +7,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <robot_state_msgs/robot_state.h>
-#include <robot_state_msgs/data_to_stm32.h>
 
 class DummyRobotNode
 {
@@ -26,7 +24,6 @@ protected:
 
     ros::Publisher pub_odom_;
     ros::Subscriber sub_twist_;
-    ros::Subscriber sub_twist_data;
     ros::Subscriber sub_init_;
     tf2_ros::Buffer tfbuf_;
     tf2_ros::TransformBroadcaster tfb_;
@@ -36,12 +33,6 @@ protected:
     {
         v_ = msg->linear.x;
         w_ = msg->angular.z;
-    }
-
-    void cbTwistData(const robot_state_msgs::data_to_stm32::ConstPtr &msg)
-    {
-        v_ = msg->running.speed;
-        w_ = msg->running.radius;
     }
 
     void cbInit(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
@@ -83,7 +74,6 @@ public:
         pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 1, true);
         sub_twist_ = nh_.subscribe("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
         sub_init_ = nh_.subscribe("initialpose", 1, &DummyRobotNode::cbInit, this);
-        sub_twist_data = nh_.subscribe("data_to_stm32", 1, &DummyRobotNode::cbTwistData, this);
     }
     void spin()
     {

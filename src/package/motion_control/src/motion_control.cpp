@@ -24,6 +24,7 @@ namespace navigation
 
     navigation_speed_publisher_ = nh.advertise<robot_state_msgs::data_to_stm32>("/data_to_stm32", 1);
     adjust_cmd_publisher_ = nh.advertise<std_msgs::Int8>("/adjust_cmd", 1);
+    cmd_vel_publisher_ = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
     f = boost::bind(&Navigation::CfgCallback, this, _1, _2);
     server.setCallback(f);
@@ -247,6 +248,10 @@ namespace navigation
       }
       cmd.header.stamp = ros::Time::now();
       navigation_speed_publisher_.publish(cmd);
+      geometry_msgs::Twist vel_msg;
+      vel_msg.linear.x = cmd.running.speed;
+      vel_msg.angular.z = cmd.running.radius;
+      cmd_vel_publisher_.publish(vel_msg);
       nav_server.publishFeedback(navFeedback);
       rate.sleep();
     }

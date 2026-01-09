@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>传感器+相机ROS发送（最终修复版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .split-panel {
+            width: 50%;
+            height: 100%;
+            position: relative;
+        }
+
+        .camera-panel {
+            background-color: #000;
+            border-right: 2px solid #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #camera-preview {
+            flex: 1;
+            width: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .camera-ros-controls {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .camera-ros-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .camera-ros-btn:disabled {
+            background-color: #9e9e9e;
+            cursor: not-allowed;
+        }
+
+        .chart-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-panel {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .control-panel select,
+        .control-panel button,
+        .control-panel input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .ros-config {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .ros-config input {
+            min-width: 150px;
+        }
+
+        .ros-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .ros-btn:disabled {
+            background-color: #9e9e9e;
+            cursor: not-allowed;
+        }
+
+        .chart-container {
+            flex: 1;
+            padding: 10px;
+            position: relative;
+        }
+
+        #sensorChart {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+        }
+
+        .hint {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .status-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        #frame-canvas {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .split-panel {
+                width: 100%;
+                height: 50%;
+            }
+
+            .camera-panel {
+                border-right: none;
+                border-bottom: 2px solid #fff;
+            }
+
+            .ros-config {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+    <!-- 1. 使用纯CDN加载Chart.js，避免本地映射文件查找 -->
+    <!-- 主CDN：不带本地source map引用 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+
+    <!-- 加载ROS相关依赖 -->
+    <script type="text/javascript" src="js/easeljs.min.js"></script>
+    <script type="text/javascript" src="js/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="js/roslib.min.js"></script>
+    <script type="text/javascript" src="js/ros2d.min.js"></script>
+    <script type="text/javascript" src="js/ros3d.min.js"></script>
+    <script type="text/javascript" src="js/three.min.js"></script>
+    <script type="text/javascript" src="js/createjs.min.js"></script>
+
+    <!-- 手动定义ROSLIB核心 -->
+    <script>
+        window.ROSLIB = window.ROSLIB || {};
+
+        (function () {
+            const Ros = function (options) {
+                options = options || {};
+                this.url = options.url;
+                this.connected = false;
+                this.socket = null;
+                this.idCounter = 0;
+                this.requests = {};
+                this.emitters = {
+                    connection: [],
+                    error: [],
+                    close: []
+                };
+            };
+
+            Ros.prototype.on = function (event, callback) {
+                if (!this.emitters[event]) this.emitters[event] = [];
+                this.emitters[event].push(callback);
+            };
+
+            Ros.prototype.emit = function (event, data) {
+                if (this.emitters[event]) {
+                    this.emitters[event].forEach(cb => cb(data));
+                }
+            };
+
+            Ros.prototype.close = function () {
+                if (this.socket) {
+                    this.socket.close();
+                    this.connected = false;
+                    this.emit('close');
+                }
+            };
+
+            Ros.prototype.connect = function () {
+                try {
+                    this.socket = new WebSocket(this.url);
+                    const self = this;
+
+                    this.socket.onopen = function () {
+                        self.connected = true;
+                        self.emit('connection');
+                    };
+
+                    this.socket.onerror = function (error) {
+                        self.emit('error', error);
+                    };
+
+                    this.socket.onclose = function () {
+                        self.connected = false;
+                        self.emit('close');
+                    };
+
+                    this.socket.onmessage = function (message) {
+                        const data = JSON.parse(message.data);
+                        if (self.requests[data.id]) {
+                            self.requests[data.id](data);
+                            delete self.requests[data.id];
+                        }
+                    };
+                } catch (err) {
+                    this.emit('error', err);
+                }
+            };
+
+            const Publisher = function (options) {
+                options = options || {};
+                this.ros = options.ros;
+                this.name = options.name;
+                this.messageType = options.messageType;
+                this.advertised = false;
+            };
+
+            Publisher.prototype.publish = function (message) {
+                if (!this.ros.connected || !this.ros.socket) return;
+                const msg = {
+                    op: 'publish',
+                    topic: this.name,
+                    msg: message
+                };
+                this.ros.socket.send(JSON.stringify(msg));
+            };
+
+            // 新增advertise方法
+            Publisher.prototype.advertise = function () {
+                if (!this.ros.connected || !this.ros.socket) return;
+                const msg = {
+                    op: 'advertise',
+                    topic: this.name,
+                    type: this.messageType
+                };
+                this.ros.socket.send(JSON.stringify(msg));
+                this.advertised = true;
+            };
+
+            const Message = function (values) {
+                for (const key in values) {
+                    this[key] = values[key];
+                }
+            };
+
+            window.ROSLIB.Ros = Ros;
+            window.ROSLIB.Publisher = Publisher;
+            window.ROSLIB.Message = Message;
+        })();
+
+        // ========== 关键修复：禁用Source Map查找 ==========
+        // 覆盖Error事件，忽略Source Map 404错误
+        const originalConsoleError = console.error;
+        console.error = function (...args) {
+            // 过滤Source Map相关的404错误
+            if (args && args.length > 0 && typeof args[0] === 'string') {
+                if (args[0].includes('source map') || args[0].includes('chart.umd.min.js.map')) {
+                    return; // 忽略该错误
+                }
+            }
+            originalConsoleError.apply(console, args);
+        };
+
+        // 禁用所有Source Map加载
+        if (typeof window !== 'undefined') {
+            window.addEventListener('error', function (e) {
+                if (e.message && (e.message.includes('source map') || e.filename && e.filename.includes('chart.umd.min.js.map'))) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        }
+    </script>
+</head>
+
+<body>
+    <div class="split-panel camera-panel">
+        <video id="camera-preview" autoplay muted playsinline></video>
+        <div class="camera-ros-controls">
+            <button id="startCameraBtn" class="camera-ros-btn">启动相机</button>
+            <button id="switchCameraBtn" class="camera-ros-btn" disabled>切换摄像头</button>
+            <button id="sendCameraBtn" class="camera-ros-btn" disabled>发送相机数据</button>
+            <button id="stopCameraBtn" class="camera-ros-btn" disabled>停止相机</button>
+        </div>
+    </div>
+
+    <div class="split-panel chart-panel">
+        <div class="control-panel">
+            <select id="sensorType">
+                <option value="acceleration">加速度传感器</option>
+                <option value="rotationRate">陀螺仪（角速度）</option>
+                <option value="gravity">重力传感器</option>
+                <option value="magnetometer">磁力计</option>
+                <option value="orientation">设备朝向</option>
+                <option value="ambientLight">环境光传感器</option>
+                <option value="proximity">接近传感器</option>
+                <option value="barometer">气压传感器</option>
+                <option value="humidity">湿度传感器</option>
+                <option value="temperature">温度传感器</option>
+            </select>
+            <select id="dataAxis">
+                <option value="x">X轴数据</option>
+                <option value="y">Y轴数据</option>
+                <option value="z">Z轴数据</option>
+                <option value="alpha">Alpha角度</option>
+                <option value="beta">Beta角度</option>
+                <option value="gamma">Gamma角度</option>
+                <option value="value">数值</option>
+            </select>
+            <button id="clearBtn">清空图表</button>
+            <button id="pauseBtn">暂停更新</button>
+
+            <div class="ros-config">
+                <input type="text" id="rosHost" placeholder="ROS主机IP" value="192.168.1.100">
+                <input type="text" id="rosPort" placeholder="ROS端口" value="9090">
+                <input type="text" id="sensorTopic" placeholder="传感器Topic" value="/mobile_sensor_data">
+                <input type="text" id="imageTopic" placeholder="图像Topic" value="/mobile_image_data">
+                <button id="connectRosBtn" class="ros-btn">连接ROS</button>
+                <button id="sendSensorBtn" class="ros-btn" disabled>发送传感器数据</button>
+            </div>
+        </div>
+
+        <div class="hint">传感器+相机数据双路发送至ROS（最终修复版）</div>
+        <div class="chart-container">
+            <canvas id="sensorChart"></canvas>
+        </div>
+        <div class="status-text" id="statusText">初始化中 | ROS未连接</div>
+    </div>
+
+    <canvas id="frame-canvas"></canvas>
+
+    <script>
+        // 核心变量
+        const sensorTypeSelect = document.getElementById('sensorType');
+        const dataAxisSelect = document.getElementById('dataAxis');
+        const clearBtn = document.getElementById('clearBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const statusText = document.getElementById('statusText');
+
+        // 相机变量
+        const cameraPreview = document.getElementById('camera-preview');
+        const frameCanvas = document.getElementById('frame-canvas');
+        const frameCtx = frameCanvas.getContext('2d');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const sendCameraBtn = document.getElementById('sendCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        let cameraStream = null;
+        let currentFacingMode = 'environment';
+        let availableFacingModes = [];
+        let isSendingCamera = false;
+        let cameraSendInterval = null;
+        const CAMERA_FPS = 5;
+        let imageSequence = 0; // 新增：图像序列号
+
+        // 图表变量
+        let sensorChart = null;
+        let chartData = [];
+        const maxDataPoints = 50;
+        let isPaused = false;
+
+        // 传感器数据缓存
+        let currentSensorData = {
+            acceleration: { x: 0, y: 0, z: 0, timestamp: 0 },
+            rotationRate: { alpha: 0, beta: 0, gamma: 0, timestamp: 0 },
+            gravity: { x: 0, y: 0, z: 0, timestamp: 0 },
+            magnetometer: { x: 0, y: 0, z: 0, timestamp: 0 },
+            orientation: { alpha: 0, beta: 0, gamma: 0, timestamp: 0 },
+            ambientLight: { value: 0, timestamp: 0 },
+            proximity: { value: 0, timestamp: 0 },
+            barometer: { value: 0, timestamp: 0 },
+            humidity: { value: 0, timestamp: 0 },
+            temperature: { value: 0, timestamp: 0 }
+        };
+
+        // ROS变量
+        const rosHostInput = document.getElementById('rosHost');
+        const rosPortInput = document.getElementById('rosPort');
+        const sensorTopicInput = document.getElementById('sensorTopic');
+        const imageTopicInput = document.getElementById('imageTopic');
+        const connectRosBtn = document.getElementById('connectRosBtn');
+        const sendSensorBtn = document.getElementById('sendSensorBtn');
+        let ros = null;
+        let sensorPublisher = null;
+        let imagePublisher = null;
+        let isRosConnected = false;
+        let isSendingSensor = false;
+        let sensorSendInterval = null;
+
+        // 环境传感器实例
+        const envSensorInstances = new Map();
+
+        // 初始化 - 增加Chart.js加载检查
+        function init() {
+            // 检查Chart.js是否加载成功
+            if (typeof Chart === 'undefined') {
+                updateStatus('错误：Chart.js图表库加载失败！');
+                // 尝试延迟初始化
+                setTimeout(() => {
+                    if (typeof Chart === 'undefined') {
+                        alert('无法加载Chart.js，请检查网络连接！');
+                        return;
+                    } else {
+                        initChart();
+                        updateStatus('Chart.js加载成功 | 初始化中');
+                    }
+                }, 2000);
+                return;
+            }
+
+            if (typeof window.ROSLIB === 'undefined' || !window.ROSLIB.Publisher) {
+                updateStatus('错误：ROS库加载失败！');
+                connectRosBtn.disabled = true;
+                return;
+            }
+
+            initChart();
+            bindEvents();
+            checkSensorSupport();
+            updateAxisOptions();
+            updateStatus('初始化完成 | ROS未连接');
+        }
+
+        // 事件绑定
+        function bindEvents() {
+            // 传感器图表事件
+            clearBtn.addEventListener('click', clearChart);
+            pauseBtn.addEventListener('click', togglePause);
+            sensorTypeSelect.addEventListener('change', updateAxisOptions);
+            dataAxisSelect.addEventListener('change', updateSensorStatus);
+
+            // 相机事件
+            startCameraBtn.addEventListener('click', startCamera);
+            switchCameraBtn.addEventListener('click', switchCamera);
+            sendCameraBtn.addEventListener('click', toggleSendCamera);
+            stopCameraBtn.addEventListener('click', stopCamera);
+
+            // ROS事件
+            connectRosBtn.addEventListener('click', function () {
+                if (isRosConnected) {
+                    // 断开ROS
+                    if (ros) {
+                        // 发送unadvertise指令
+                        if (ros.socket && ros.connected) {
+                            ros.socket.send(JSON.stringify({
+                                op: 'unadvertise',
+                                topic: sensorTopicInput.value.trim() || '/mobile_sensor_data'
+                            }));
+                            ros.socket.send(JSON.stringify({
+                                op: 'unadvertise',
+                                topic: imageTopicInput.value.trim() || '/mobile_image_data'
+                            }));
+                        }
+                        ros.close();
+                        ros = null;
+                    }
+                    if (sensorSendInterval) clearInterval(sensorSendInterval);
+                    if (cameraSendInterval) clearInterval(cameraSendInterval);
+
+                    isRosConnected = false;
+                    isSendingSensor = false;
+                    isSendingCamera = false;
+                    sendSensorBtn.disabled = true;
+                    sendCameraBtn.disabled = true;
+                    sendSensorBtn.textContent = "发送传感器数据";
+                    sendCameraBtn.textContent = "发送相机数据";
+                    connectRosBtn.textContent = "连接ROS";
+                    updateStatus('ROS已断开 | 已取消Topic声明');
+                    return;
+                }
+
+                // 连接ROS
+                const host = rosHostInput.value.trim();
+                const port = rosPortInput.value.trim() || '9090';
+                const wsUrl = `ws://${host}:${port}`;
+
+                if (!host) {
+                    alert("请输入ROS主机IP！");
+                    return;
+                }
+
+                try {
+                    ros = new window.ROSLIB.Ros({ url: wsUrl });
+
+                    ros.on('connection', function () {
+                        isRosConnected = true;
+                        connectRosBtn.textContent = "断开ROS";
+                        sendSensorBtn.disabled = false;
+                        sendCameraBtn.disabled = (cameraStream === null);
+
+                        // ========== 核心修复：主动advertise Topic ==========
+                        const sensorTopic = sensorTopicInput.value.trim() || '/mobile_sensor_data';
+                        const imageTopic = imageTopicInput.value.trim() || '/mobile_image_data';
+
+                        // 1. 声明传感器Topic类型
+                        ros.socket.send(JSON.stringify({
+                            op: 'advertise',
+                            topic: sensorTopic,
+                            type: 'std_msgs/Float64MultiArray'
+                        }));
+
+                        // 2. 声明图像Topic类型
+                        ros.socket.send(JSON.stringify({
+                            op: 'advertise',
+                            topic: imageTopic,
+                            type: 'sensor_msgs/Image'
+                        }));
+
+                        // 3. 创建Publisher并执行advertise
+                        sensorPublisher = new window.ROSLIB.Publisher({
+                            ros: ros,
+                            name: sensorTopic,
+                            messageType: 'std_msgs/Float64MultiArray'
+                        });
+                        sensorPublisher.advertise();
+
+                        imagePublisher = new window.ROSLIB.Publisher({
+                            ros: ros,
+                            name: imageTopic,
+                            messageType: 'sensor_msgs/Image'
+                        });
+                        imagePublisher.advertise();
+
+                        updateStatus(`ROS已连接(${host}:${port}) | Topic已声明`);
+                    });
+
+                    ros.on('error', function (error) {
+                        isRosConnected = false;
+                        sendSensorBtn.disabled = true;
+                        sendCameraBtn.disabled = true;
+                        connectRosBtn.textContent = "连接ROS";
+                        updateStatus(`ROS连接错误：${error.message || '无法连接'}`);
+                    });
+
+                    ros.on('close', function () {
+                        isRosConnected = false;
+                        isSendingSensor = false;
+                        isSendingCamera = false;
+                        sendSensorBtn.disabled = true;
+                        sendCameraBtn.disabled = true;
+                        sendSensorBtn.textContent = "发送传感器数据";
+                        sendCameraBtn.textContent = "发送相机数据";
+                        connectRosBtn.textContent = "连接ROS";
+                        updateStatus('ROS连接已关闭');
+                    });
+
+                    ros.connect();
+                } catch (err) {
+                    alert(`ROS初始化失败：${err.message}`);
+                    updateStatus(`ROS连接失败：${err.message}`);
+                }
+            });
+
+            // 传感器发送事件
+            sendSensorBtn.addEventListener('click', toggleSendSensor);
+        }
+
+        // 传感器数据发送
+        function toggleSendSensor() {
+            if (!isRosConnected) {
+                alert("请先连接ROS！");
+                return;
+            }
+
+            if (isSendingSensor) {
+                clearInterval(sensorSendInterval);
+                isSendingSensor = false;
+                sendSensorBtn.textContent = "发送传感器数据";
+                updateSensorStatus();
+            } else {
+                isSendingSensor = true;
+                sendSensorBtn.textContent = "停止发送传感器";
+                sensorSendInterval = setInterval(sendSensorData, 100);
+                updateStatus(`ROS已连接 | 发送传感器数据(${sensorTopicInput.value})`);
+            }
+        }
+
+        function sendSensorData() {
+            if (!isRosConnected || !sensorPublisher || isPaused) return;
+            try {
+                const sensorType = sensorTypeSelect.value;
+                const dataAxis = dataAxisSelect.value;
+                const currentValue = parseFloat(currentSensorData[sensorType][dataAxis].toFixed(4));
+                const timestamp = Date.now() / 1000;
+
+                const sensorMsg = new window.ROSLIB.Message({
+                    layout: { dim: [{ label: sensorType, size: 1, stride: 1 }], data_offset: 0 },
+                    data: [currentValue, timestamp,
+                        parseFloat((sensorType === 'acceleration' ? currentSensorData[sensorType].x : 0).toFixed(4)),
+                        parseFloat((sensorType === 'acceleration' ? currentSensorData[sensorType].y : 0).toFixed(4)),
+                        parseFloat((sensorType === 'acceleration' ? currentSensorData[sensorType].z : 0).toFixed(4))
+                    ]
+                });
+
+                if (ros && ros.socket && ros.connected) {
+                    sensorPublisher.publish(sensorMsg);
+                }
+            } catch (err) {
+                console.error('发送传感器数据出错：', err);
+            }
+        }
+
+        // 相机数据发送 - 完全重构
+        function toggleSendCamera() {
+            if (!isRosConnected) { alert("请先连接ROS！"); return; }
+            if (!cameraStream) { alert("请先启动相机！"); return; }
+
+            if (isSendingCamera) {
+                clearInterval(cameraSendInterval);
+                isSendingCamera = false;
+                sendCameraBtn.textContent = "发送相机数据";
+                updateStatus(`ROS已连接 | 停止发送相机数据`);
+            } else {
+                isSendingCamera = true;
+                sendCameraBtn.textContent = "停止发送相机";
+                cameraSendInterval = setInterval(captureAndSendFrame, 1000 / CAMERA_FPS);
+                updateStatus(`ROS已连接 | 发送相机数据(${imageTopicInput.value}) FPS:${CAMERA_FPS}`);
+            }
+        }
+
+        // 优化：正确处理图像数据编码和封装
+        function captureAndSendFrame() {
+            if (!isRosConnected || !imagePublisher || !cameraStream) return;
+
+            try {
+                // 设置canvas尺寸为视频实际尺寸
+                const videoWidth = cameraPreview.videoWidth || 640;
+                const videoHeight = cameraPreview.videoHeight || 480;
+                frameCanvas.width = videoWidth;
+                frameCanvas.height = videoHeight;
+
+                // 绘制视频帧到canvas
+                frameCtx.drawImage(cameraPreview, 0, 0, videoWidth, videoHeight);
+
+                // 获取JPEG格式的二进制数据（关键优化）
+                frameCanvas.toBlob(async (blob) => {
+                    if (!blob) return;
+
+                    // 将Blob转换为Uint8Array
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+
+                    // 生成ROS图像消息（符合sensor_msgs/Image标准）
+                    const now = new Date();
+                    const secs = Math.floor(now.getTime() / 1000);
+                    const nsecs = (now.getTime() % 1000) * 1000000;
+
+                    // 递增序列号
+                    imageSequence++;
+
+                    // 构建标准的sensor_msgs/Image消息
+                    const imageMsg = new window.ROSLIB.Message({
+                        header: {
+                            seq: imageSequence,          // 递增的序列号（关键修复）
+                            stamp: { secs: secs, nsecs: nsecs },
+                            frame_id: "camera_frame"
+                        },
+                        height: videoHeight,          // 图像高度
+                        width: videoWidth,           // 图像宽度
+                        encoding: "jpeg",            // JPEG编码格式
+                        is_bigendian: 0,             // 小端序
+                        step: uint8Array.length,     // 修正step值为数据长度
+                        data: Array.from(uint8Array) // 转换为普通数组（ROS要求）
+                    });
+
+                    // 发布图像消息
+                    if (ros && ros.socket && ros.connected) {
+                        imagePublisher.publish(imageMsg);
+                        console.log(`发送图像帧 #${imageSequence}: ${uint8Array.length} bytes`);
+                    }
+                }, 'image/jpeg', 0.6); // 指定JPEG格式和质量
+            } catch (err) {
+                console.error('发送相机帧出错：', err);
+                updateStatus(`图像发送错误：${err.message}`);
+            }
+        }
+
+        // 相机基础功能
+        function startCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus('错误：浏览器不支持相机API');
+                return;
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: currentFacingMode,
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    frameRate: { ideal: CAMERA_FPS }
+                }
+            };
+
+            startCameraBtn.disabled = true;
+            updateStatus(`请求相机权限... | ${isRosConnected ? 'ROS已连接' : 'ROS未连接'}`);
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    cameraStream = stream;
+                    cameraPreview.srcObject = stream;
+                    detectAvailableFacingModes(stream);
+
+                    startCameraBtn.disabled = true;
+                    switchCameraBtn.disabled = availableFacingModes.length < 2;
+                    sendCameraBtn.disabled = !isRosConnected;
+                    stopCameraBtn.disabled = false;
+
+                    updateStatus(`相机已启动（${currentFacingMode === 'environment' ? '后置' : '前置'}）`);
+                })
+                .catch(err => {
+                    startCameraBtn.disabled = false;
+                    let errMsg = err.name === 'NotAllowedError' ? '权限被拒' : '未检测到摄像头';
+                    if (err.name === 'NotFoundError' && currentFacingMode === 'environment') {
+                        currentFacingMode = 'user';
+                        startCamera();
+                        return;
+                    }
+                    updateStatus(`相机错误：${errMsg}`);
+                });
+        }
+
+        function switchCamera() {
+            if (!cameraStream) return;
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            stopCamera(false);
+            startCamera();
+        }
+
+        function stopCamera(isFullStop = true) {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                cameraPreview.srcObject = null;
+            }
+
+            if (isSendingCamera) {
+                clearInterval(cameraSendInterval);
+                isSendingCamera = false;
+                sendCameraBtn.textContent = "发送相机数据";
+            }
+
+            if (isFullStop) {
+                startCameraBtn.disabled = false;
+                switchCameraBtn.disabled = true;
+                sendCameraBtn.disabled = true;
+                stopCameraBtn.disabled = true;
+                updateStatus(`相机已停止 | ${isRosConnected ? 'ROS已连接' : 'ROS未连接'}`);
+            }
+        }
+
+        function detectAvailableFacingModes(stream) {
+            availableFacingModes = [];
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            availableFacingModes = capabilities.facingMode || [currentFacingMode];
+        }
+
+        // 图表功能 - 确保Chart已定义
+        function initChart() {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js未加载，无法初始化图表');
+                return;
+            }
+
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+            sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: maxDataPoints }, (_, i) => i),
+                    datasets: [{
+                        label: '实时传感器数据',
+                        data: chartData,
+                        borderColor: '#4285f4',
+                        backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: true,
+                        pointRadius: 1,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: '数据点' }, ticks: { display: false } },
+                        y: { title: { display: true, text: '数据值' }, suggestedMin: -20, suggestedMax: 20 }
+                    },
+                    animation: false,
+                    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index' } }
+                }
+            });
+            setInterval(updateChart, 20);
+        }
+
+        function updateChart() {
+            if (isPaused || !sensorChart) return;
+            const sensorType = sensorTypeSelect.value;
+            const dataAxis = dataAxisSelect.value;
+            let value = parseFloat(currentSensorData[sensorType][dataAxis].toFixed(2));
+            currentSensorData[sensorType].timestamp = Date.now() / 1000;
+
+            chartData.push(value);
+            if (chartData.length > maxDataPoints) chartData.shift();
+            sensorChart.data.datasets[0].data = chartData;
+            sensorChart.update();
+
+            if (!isSendingSensor) updateSensorStatus();
+        }
+
+        function clearChart() {
+            if (!sensorChart) return;
+            chartData = [];
+            sensorChart.data.datasets[0].data = chartData;
+            sensorChart.update();
+            updateSensorStatus();
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '继续更新' : '暂停更新';
+            updateStatus(`${isPaused ? '已暂停' : '已恢复'} | ${isRosConnected ? 'ROS已连接' : 'ROS未连接'}`);
+        }
+
+        function updateAxisOptions() {
+            const sensorType = sensorTypeSelect.value;
+            const axisOptions = dataAxisSelect.options;
+            for (let i = 0; i < axisOptions.length; i++) axisOptions[i].disabled = false;
+
+            switch (sensorType) {
+                case 'acceleration': case 'gravity': case 'magnetometer':
+                    axisOptions[3].disabled = axisOptions[4].disabled = axisOptions[5].disabled = axisOptions[6].disabled = true; break;
+                case 'rotationRate': case 'orientation':
+                    axisOptions[0].disabled = axisOptions[1].disabled = axisOptions[2].disabled = axisOptions[6].disabled = true; break;
+                default:
+                    axisOptions[0].disabled = axisOptions[1].disabled = axisOptions[2].disabled = axisOptions[3].disabled = axisOptions[4].disabled = axisOptions[5].disabled = true;
+                    dataAxisSelect.value = 'value'; break;
+            }
+        }
+
+        function updateSensorStatus() {
+            const sensorType = sensorTypeSelect.value;
+            const dataAxis = dataAxisSelect.value;
+            const value = parseFloat(currentSensorData[sensorType][dataAxis].toFixed(2));
+            const rosStatus = isRosConnected ? 'ROS已连接' : 'ROS未连接';
+            const cameraStatus = cameraStream ? '相机已启动' : '相机未启动';
+            updateStatus(`${sensorType}-${dataAxis}: ${value} | ${cameraStatus} | ${rosStatus}`);
+        }
+
+        function updateStatus(text) {
+            statusText.textContent = text;
+        }
+
+        // 传感器权限与监听
+        function checkSensorSupport() {
+            let hasSupport = false;
+            if (window.DeviceMotionEvent || window.DeviceOrientationEvent) hasSupport = true;
+            else['acceleration', 'rotationRate', 'gravity', 'magnetometer', 'orientation'].forEach(type => {
+                const opt = document.querySelector(`option[value="${type}"]`);
+                if (opt) opt.disabled = true;
+            });
+
+            initEnvSensors();
+            if (!hasSupport && envSensorInstances.size === 0) updateStatus('错误：无可用传感器 | ROS未连接');
+            else requestSensorPermission();
+        }
+
+        function initEnvSensors() {
+            const sensorMap = {
+                ambientLight: window.AmbientLightSensor,
+                proximity: window.ProximitySensor,
+                barometer: window.Barometer,
+                humidity: window.RelativeHumiditySensor,
+                temperature: window.TemperatureSensor
+            };
+            for (const [type, SensorCtor] of Object.entries(sensorMap)) {
+                if (!SensorCtor) {
+                    const opt = document.querySelector(`option[value="${type}"]`);
+                    if (opt) opt.disabled = true;
+                    continue;
+                }
+                try {
+                    const sensor = new SensorCtor({ frequency: 50 });
+                    sensor.addEventListener('reading', () => {
+                        if (isPaused) return;
+                        currentSensorData[type].value = sensor[type === 'ambientLight' ? 'illuminance' : type === 'proximity' ? 'distance' : type === 'barometer' ? 'pressure' : type === 'humidity' ? 'humidity' : 'temperature'] || 0;
+                        currentSensorData[type].timestamp = Date.now() / 1000;
+                    });
+                    sensor.addEventListener('error', () => {
+                        const opt = document.querySelector(`option[value="${type}"]`);
+                        if (opt) opt.disabled = true;
+                    });
+                    envSensorInstances.set(type, sensor);
+                } catch (err) {
+                    const opt = document.querySelector(`option[value="${type}"]`);
+                    if (opt) opt.disabled = true;
+                }
+            }
+        }
+
+        function requestSensorPermission() {
+            const request = async () => {
+                try {
+                    if (DeviceMotionEvent?.requestPermission) {
+                        const perm = await DeviceMotionEvent.requestPermission();
+                        if (perm !== 'granted') throw new Error('运动传感器权限被拒');
+                    }
+                    if (DeviceOrientationEvent?.requestPermission) {
+                        const perm = await DeviceOrientationEvent.requestPermission();
+                        if (perm !== 'granted') throw new Error('方向传感器权限被拒');
+                    }
+                    startAllSensors();
+                } catch (err) { updateStatus(`权限错误：${err.message} | ROS未连接`); }
+            };
+            if (DeviceMotionEvent?.requestPermission || DeviceOrientationEvent?.requestPermission) request();
+            else startAllSensors();
+        }
+
+        function startAllSensors() {
+            if (window.DeviceMotionEvent) window.addEventListener('devicemotion', handleMotionData);
+            if (window.DeviceOrientationEvent) window.addEventListener('deviceorientation', handleOrientationData);
+            envSensorInstances.forEach(sensor => sensor.start());
+            updateStatus('传感器已启动 | 相机未启动 | ROS未连接');
+        }
+
+        function handleMotionData(event) {
+            if (isPaused) return;
+            const accel = event.acceleration || event.accelerationIncludingGravity;
+            if (accel) currentSensorData.acceleration = { x: accel.x || 0, y: accel.y || 0, z: accel.z || 0, timestamp: Date.now() / 1000 };
+            const rot = event.rotationRate;
+            if (rot) currentSensorData.rotationRate = { alpha: rot.alpha || 0, beta: rot.beta || 0, gamma: rot.gamma || 0, timestamp: Date.now() / 1000 };
+            const gravity = event.gravity || event.accelerationIncludingGravity;
+            if (gravity) currentSensorData.gravity = { x: gravity.x || 0, y: gravity.y || 0, z: gravity.z || 0, timestamp: Date.now() / 1000 };
+        }
+
+        function handleOrientationData(event) {
+            if (isPaused) return;
+            if (event.absolute && event.alpha !== null) {
+                currentSensorData.magnetometer = {
+                    x: Math.sin(event.alpha * Math.PI / 180) * 10,
+                    y: Math.cos(event.alpha * Math.PI / 180) * 10,
+                    z: 0,
+                    timestamp: Date.now() / 1000
+                };
+            }
+            if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
+                currentSensorData.orientation = { alpha: event.alpha || 0, beta: event.beta || 0, gamma: event.gamma || 0, timestamp: Date.now() / 1000 };
+            }
+        }
+
+        // 页面卸载清理
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            envSensorInstances.forEach(sensor => sensor.stop());
+            if (ros) {
+                // 发送unadvertise
+                if (ros.socket && ros.connected) {
+                    ros.socket.send(JSON.stringify({
+                        op: 'unadvertise',
+                        topic: sensorTopicInput.value.trim() || '/mobile_sensor_data'
+                    }));
+                    ros.socket.send(JSON.stringify({
+                        op: 'unadvertise',
+                        topic: imageTopicInput.value.trim() || '/mobile_image_data'
+                    }));
+                }
+                ros.close();
+            }
+            if (sensorSendInterval) clearInterval(sensorSendInterval);
+            if (cameraSendInterval) clearInterval(cameraSendInterval);
+        });
+
+        // 确保页面完全加载后再初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            // 延迟初始化，确保所有库加载完成
+            setTimeout(init, 500);
+        });
+    </script>
+</body>
+
+</html>

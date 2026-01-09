@@ -1,0 +1,770 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    touch-action: manipulation;
+}
+
+body {
+    background-color: #2c2c2c;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    color: #fff;
+}
+
+/* 新增：ROS连接状态显示（适配 ROSHandler 的 updateConnectionStatus） */
+.connection-status-bar {
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    background-color: #333;
+    border-bottom: 1px solid #555;
+}
+
+#robotStatus {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background-color: red;
+}
+
+#connectionStatus {
+    font-size: 12px;
+}
+
+#connectionStatus.connected {
+    color: #4CAF50;
+}
+
+#connectionStatus.disconnected {
+    color: #f44336;
+}
+
+/* 顶部导航栏 */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #4f87e8;
+    padding: 8px 12px;
+    border-bottom: 2px solid #555;
+    z-index: 100;
+}
+
+.top-nav h1 {
+    font-size: 18px;
+    font-weight: normal;
+}
+
+.func-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #6ba2ff;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 8px;
+    /* 新增：按钮基础动效 */
+    transition: all 0.2s ease;
+    transform: scale(1);
+}
+
+.func-btn:hover {
+    background-color: #3d79e0;
+}
+
+/* 新增：顶部功能按钮点击动效 */
+.func-btn:active {
+    transform: scale(0.95);
+    background-color: #2a5dc3;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 主内容区 */
+.main-content {
+    display: flex;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 左侧地图区域 */
+#map-area {
+    flex: 1;
+    position: relative;
+    background-color: #3a3a3a;
+    border: 2px solid #555;
+    margin: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#map-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+}
+
+/* 地图控制悬浮栏 */
+#map-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 300px;
+    /* 固定宽度，为日志栏同宽做准备 */
+}
+
+#map-controls .control-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#map-controls button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #e0e0e0;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    /* 新增：地图控制按钮动效 */
+    transition: all 0.2s ease;
+    transform: scale(1);
+}
+
+#map-controls button:hover {
+    background: #d0d0d0;
+}
+
+#map-controls button.active {
+    background: #4472c4;
+    color: white;
+}
+
+/* 新增：地图控制按钮点击动效 */
+#map-controls button:active {
+    transform: scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#map-controls button.active:active {
+    background: #2a5dc3;
+}
+
+#map-controls .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #333;
+    margin-top: 4px;
+}
+
+#map-controls .control-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* 优化：ROS日志栏样式（不遮挡控制栏、同宽、延伸至窗口底部） */
+#ros-log-panel {
+    position: absolute;
+    top: calc(10px + 100px + 10px);
+    /* 初始占位，后续通过JS动态校准 */
+    left: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    width: 300px;
+    /* 与地图控制栏同宽 */
+    bottom: 10px;
+    /* 底部与地图区域内边距对齐，延伸至窗口底部（间接） */
+    overflow-y: auto;
+    /* 仅纵向滚动，横向不溢出 */
+}
+
+#ros-log-panel .log-label {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #444;
+}
+
+#ros-log-list {
+    list-style: none;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#ros-log-list li {
+    padding: 3px 6px;
+    border-radius: 4px;
+    word-break: break-all;
+    /* 防止横向溢出 */
+}
+
+/* 日志级别颜色区分 */
+#ros-log-list li.debug {
+    background: rgba(158, 158, 158, 0.3);
+    color: #e0e0e0;
+}
+
+#ros-log-list li.info {
+    background: rgba(33, 150, 243, 0.3);
+    color: #bbdefb;
+}
+
+#ros-log-list li.warn {
+    background: rgba(255, 193, 7, 0.3);
+    color: #fff8e1;
+}
+
+#ros-log-list li.error {
+    background: rgba(244, 67, 54, 0.3);
+    color: #ffcdd2;
+}
+
+#ros-log-list li.fatal {
+    background: rgba(179, 0, 0, 0.3);
+    color: #ff8a80;
+}
+
+/* 状态提示框 */
+#status-toast {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 10;
+    max-width: 80%;
+    text-align: center;
+}
+
+/* 地图锁定提示 */
+.map-lock-toast {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: none;
+}
+
+.map-lock-toast.show {
+    display: block;
+}
+
+/* 右侧功能面板 */
+#side-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100%;
+    background-color: #f5f5f5;
+    border-left: 2px solid #555;
+    z-index: 90;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+#side-panel.show {
+    transform: translateX(0);
+}
+
+/* 面板标题栏 */
+.panel-header {
+    background-color: #4472c4;
+    color: white;
+    padding: 8px 12px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+}
+
+.panel-header .close-btn {
+    width: 24px;
+    height: 24px;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0;
+    /* 新增：关闭按钮动效 */
+    transition: all 0.2s ease;
+    transform: scale(1);
+}
+
+/* 新增：关闭按钮点击动效 */
+.panel-header .close-btn:active {
+    transform: scale(0.9);
+    background-color: #d32f2f;
+}
+
+/* 面板内容区域 */
+.panel-content {
+    padding: 12px;
+    color: #333;
+}
+
+/* 折叠面板样式 */
+.collapse-panel {
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.collapse-header {
+    background-color: #e8e8e8;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    /* 新增：折叠面板标题动效 */
+    transition: all 0.2s ease;
+}
+
+.collapse-header:after {
+    content: "▼";
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.collapse-header.active:after {
+    transform: rotate(180deg);
+}
+
+/* 新增：折叠面板标题点击动效 */
+.collapse-header:active {
+    background-color: #d8d8d8;
+    transform: scale(0.98);
+}
+
+.collapse-body {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.collapse-body.show {
+    padding: 12px;
+    max-height: 800px;
+}
+
+/* 精简后机器人状态栏 - 电池与充电状态合并 */
+.state-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.battery-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.battery-item label {
+    font-size: 13px;
+    color: #666;
+    width: 80px;
+}
+
+.battery-bar {
+    flex: 1;
+    height: 20px;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.battery-fill {
+    height: 100%;
+    background-color: #22c322;
+    transition: width 0.3s, background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 充电闪烁动画 */
+@keyframes chargeBlink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.battery-fill.charging {
+    background-color: #5bc0de;
+    animation: chargeBlink 1s infinite;
+}
+
+.charge-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 500;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+.charge-text.show {
+    display: flex;
+}
+
+.battery-percent {
+    font-size: 13px;
+    color: #333;
+    width: 40px;
+    text-align: center;
+}
+
+/* 摇杆控制模块（移除紧急停止） */
+.joystick-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px 0;
+    padding: 15px;
+    background-color: #e8e8e8;
+    border-radius: 8px;
+}
+
+.joystick-title {
+    font-size: 15px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.joystick-wrapper {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background-color: #d0d0d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.joystick-base {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background-color: #b8b8b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.joystick-knob {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #4472c4;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    position: absolute;
+    touch-action: none;
+    cursor: grab;
+    /* 新增：摇杆按钮动效 */
+    transition: all 0.1s ease;
+}
+
+.joystick-knob:active {
+    cursor: grabbing;
+    background-color: #2a5dc3;
+    transform: scale(0.95);
+}
+
+.joystick-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* 导航模块 */
+.nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.nav-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #e0e0e0;
+    color: #333;
+    cursor: pointer;
+    font-size: 13px;
+    /* 新增：导航按钮基础动效 */
+    transition: all 0.2s ease;
+    transform: scale(1);
+}
+
+.nav-btn.primary {
+    background-color: #4472c4;
+    color: white;
+}
+
+.nav-btn.active {
+    background-color: #28a745;
+    color: white;
+}
+
+/* 新增：反光贴调试按钮激活样式（绿色） */
+.nav-btn.reflection-active {
+    background-color: #28a745;
+    color: white;
+}
+
+/* 新增：导航按钮 hover/active 动效 */
+.nav-btn:hover {
+    background-color: #d0d0d0;
+}
+
+.nav-btn.primary:hover {
+    background-color: #3a65b4;
+}
+
+.nav-btn.active:hover,
+.nav-btn.reflection-active:hover {
+    background-color: #218838;
+}
+
+/* 新增：导航按钮点击动效 */
+.nav-btn:active {
+    transform: scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn.primary:active {
+    background-color: #2a5dc3;
+}
+
+.nav-btn.active:active,
+.nav-btn.reflection-active:active {
+    background-color: #1e7e34;
+}
+
+/* 参数设置模块 */
+.param-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.param-row label {
+    font-size: 13px;
+    color: #666;
+    width: 80px;
+    white-space: nowrap;
+}
+
+.param-row input {
+    flex: 1;
+    min-width: 80px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    /* 新增：输入框聚焦动效 */
+    transition: border-color 0.2s ease;
+}
+
+.param-row input:focus {
+    outline: none;
+    border-color: #4472c4;
+    box-shadow: 0 0 0 2px rgba(68, 114, 196, 0.2);
+}
+
+/* 系统设置按钮组 */
+.sys-btn-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+/* 新增：调试控制按钮组样式（3列布局，适配面板宽度） */
+.debug-btn-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+/* 节点下拉列表样式 */
+.node-select {
+    flex: 1;
+    min-width: 80px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    /* 新增：下拉框动效 */
+    transition: border-color 0.2s ease;
+}
+
+.node-select:focus {
+    outline: none;
+    border-color: #4472c4;
+    box-shadow: 0 0 0 2px rgba(68, 114, 196, 0.2);
+}
+
+/* 遮罩层 */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 80;
+    display: none;
+}
+
+#btn-sensor-control {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #2196F3;
+    color: white;
+    cursor: pointer;
+}
+
+#btn-sensor-control.active {
+    background: #f44336;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .joystick-wrapper {
+        width: 200px;
+        height: 200px;
+    }
+
+    .joystick-base {
+        width: 160px;
+        height: 160px;
+    }
+
+    .joystick-knob {
+        width: 70px;
+        height: 70px;
+    }
+
+    #side-panel {
+        width: 100%;
+    }
+
+    .top-nav h1 {
+        font-size: 16px;
+    }
+
+    .func-btn {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+
+    #map-controls {
+        padding: 8px;
+        width: 250px;
+        /* 手机端控制栏缩窄，日志栏同步 */
+    }
+
+    #map-controls button {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+
+    /* 手机端日志栏同步适配 */
+    #ros-log-panel {
+        width: 250px;
+        /* 与控制栏同宽 */
+        bottom: 10px;
+        /* 保持延伸至底部 */
+    }
+
+    .sys-btn-group {
+        grid-template-columns: 1fr;
+    }
+
+    /* 手机端调试按钮组改为2列 */
+    .debug-btn-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

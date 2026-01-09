@@ -5,685 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Robot Control</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            touch-action: manipulation;
-        }
-
-        body {
-            background-color: #2c2c2c;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            color: #fff;
-        }
-
-        /* 新增：ROS连接状态显示（适配 ROSHandler 的 updateConnectionStatus） */
-        .connection-status-bar {
-            display: flex;
-            align-items: center;
-            padding: 4px 12px;
-            background-color: #333;
-            border-bottom: 1px solid #555;
-        }
-
-        #robotStatus {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-            background-color: red;
-        }
-
-        #connectionStatus {
-            font-size: 12px;
-        }
-
-        #connectionStatus.connected {
-            color: #4CAF50;
-        }
-
-        #connectionStatus.disconnected {
-            color: #f44336;
-        }
-
-        /* 顶部导航栏 */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #4472c4;
-            padding: 8px 12px;
-            border-bottom: 2px solid #555;
-            z-index: 100;
-        }
-
-        .top-nav h1 {
-            font-size: 18px;
-            font-weight: normal;
-        }
-
-        .func-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: #6ba2ff;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 8px;
-        }
-
-        .func-btn:hover {
-            background-color: #3d79e0;
-        }
-
-        /* 主内容区 */
-        .main-content {
-            display: flex;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 左侧地图区域 */
-        #map-area {
-            flex: 1;
-            position: relative;
-            background-color: #3a3a3a;
-            border: 2px solid #555;
-            margin: 10px;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        #map-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-        }
-
-        /* 地图控制悬浮栏 */
-        #map-controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 300px;
-            /* 固定宽度，为日志栏同宽做准备 */
-        }
-
-        #map-controls .control-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        #map-controls button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            background: #e0e0e0;
-            cursor: pointer;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        #map-controls button:hover {
-            background: #d0d0d0;
-        }
-
-        #map-controls button.active {
-            background: #4472c4;
-            color: white;
-        }
-
-        #map-controls .toggle-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            color: #333;
-            margin-top: 4px;
-        }
-
-        #map-controls .control-label {
-            font-size: 14px;
-            color: #333;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        /* 优化：ROS日志栏样式（不遮挡控制栏、同宽、延伸至窗口底部） */
-        #ros-log-panel {
-            position: absolute;
-            top: calc(10px + 100px + 10px);
-            /* 初始占位，后续通过JS动态校准 */
-            left: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-            width: 300px;
-            /* 与地图控制栏同宽 */
-            bottom: 10px;
-            /* 底部与地图区域内边距对齐，延伸至窗口底部（间接） */
-            overflow-y: auto;
-            /* 仅纵向滚动，横向不溢出 */
-        }
-
-        #ros-log-panel .log-label {
-            font-size: 13px;
-            color: #fff;
-            font-weight: 500;
-            margin-bottom: 6px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #444;
-        }
-
-        #ros-log-list {
-            list-style: none;
-            font-size: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        #ros-log-list li {
-            padding: 3px 6px;
-            border-radius: 4px;
-            word-break: break-all;
-            /* 防止横向溢出 */
-        }
-
-        /* 日志级别颜色区分 */
-        #ros-log-list li.debug {
-            background: rgba(158, 158, 158, 0.3);
-            color: #e0e0e0;
-        }
-
-        #ros-log-list li.info {
-            background: rgba(33, 150, 243, 0.3);
-            color: #bbdefb;
-        }
-
-        #ros-log-list li.warn {
-            background: rgba(255, 193, 7, 0.3);
-            color: #fff8e1;
-        }
-
-        #ros-log-list li.error {
-            background: rgba(244, 67, 54, 0.3);
-            color: #ffcdd2;
-        }
-
-        #ros-log-list li.fatal {
-            background: rgba(179, 0, 0, 0.3);
-            color: #ff8a80;
-        }
-
-        /* 状态提示框 */
-        #status-toast {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            z-index: 10;
-            max-width: 80%;
-            text-align: center;
-        }
-
-        /* 地图锁定提示 */
-        .map-lock-toast {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 14px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            display: none;
-        }
-
-        .map-lock-toast.show {
-            display: block;
-        }
-
-        /* 右侧功能面板 */
-        #side-panel {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 320px;
-            height: 100%;
-            background-color: #f5f5f5;
-            border-left: 2px solid #555;
-            z-index: 90;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            overflow-y: auto;
-        }
-
-        #side-panel.show {
-            transform: translateX(0);
-        }
-
-        /* 面板标题栏 */
-        .panel-header {
-            background-color: #4472c4;
-            color: white;
-            padding: 8px 12px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 15px;
-        }
-
-        .panel-header .close-btn {
-            width: 24px;
-            height: 24px;
-            background-color: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            padding: 0;
-        }
-
-        /* 面板内容区域 */
-        .panel-content {
-            padding: 12px;
-            color: #333;
-        }
-
-        /* 折叠面板样式 */
-        .collapse-panel {
-            margin-bottom: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .collapse-header {
-            background-color: #e8e8e8;
-            padding: 10px 12px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .collapse-header:after {
-            content: "▼";
-            font-size: 12px;
-            transition: transform 0.2s;
-        }
-
-        .collapse-header.active:after {
-            transform: rotate(180deg);
-        }
-
-        .collapse-body {
-            padding: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, padding 0.3s ease;
-        }
-
-        .collapse-body.show {
-            padding: 12px;
-            max-height: 800px;
-        }
-
-        /* 精简后机器人状态栏 - 电池与充电状态合并 */
-        .state-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
-
-        .battery-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            position: relative;
-        }
-
-        .battery-item label {
-            font-size: 13px;
-            color: #666;
-            width: 80px;
-        }
-
-        .battery-bar {
-            flex: 1;
-            height: 20px;
-            background-color: #e0e0e0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .battery-fill {
-            height: 100%;
-            background-color: #22c322;
-            transition: width 0.3s, background-color 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* 充电闪烁动画 */
-        @keyframes chargeBlink {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .battery-fill.charging {
-            background-color: #5bc0de;
-            animation: chargeBlink 1s infinite;
-        }
-
-        .charge-text {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #fff;
-            font-weight: 500;
-            text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-            display: none;
-        }
-
-        .charge-text.show {
-            display: flex;
-        }
-
-        .battery-percent {
-            font-size: 13px;
-            color: #333;
-            width: 40px;
-            text-align: center;
-        }
-
-        /* 摇杆控制模块（移除紧急停止） */
-        .joystick-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 10px 0;
-            padding: 15px;
-            background-color: #e8e8e8;
-            border-radius: 8px;
-        }
-
-        .joystick-title {
-            font-size: 15px;
-            color: #333;
-            margin-bottom: 15px;
-            font-weight: 500;
-        }
-
-        .joystick-wrapper {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background-color: #d0d0d0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .joystick-base {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background-color: #b8b8b8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .joystick-knob {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: #4472c4;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-            position: absolute;
-            touch-action: none;
-            cursor: grab;
-        }
-
-        .joystick-knob:active {
-            cursor: grabbing;
-            background-color: #2a5dc3;
-            transform: scale(0.95);
-        }
-
-        .joystick-hint {
-            font-size: 12px;
-            color: #666;
-            margin-top: 15px;
-            text-align: center;
-        }
-
-        /* 导航模块 */
-        .nav-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .nav-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: #e0e0e0;
-            color: #333;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .nav-btn.primary {
-            background-color: #4472c4;
-            color: white;
-        }
-
-        .nav-btn.active {
-            background-color: #28a745;
-            color: white;
-        }
-
-        /* 新增：反光贴调试按钮激活样式（绿色） */
-        .nav-btn.reflection-active {
-            background-color: #28a745;
-            color: white;
-        }
-
-        /* 参数设置模块 */
-        .param-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-
-        .param-row label {
-            font-size: 13px;
-            color: #666;
-            width: 80px;
-            white-space: nowrap;
-        }
-
-        .param-row input {
-            flex: 1;
-            min-width: 80px;
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-
-        /* 系统设置按钮组 */
-        .sys-btn-group {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        /* 新增：调试控制按钮组样式（3列布局，适配面板宽度） */
-        .debug-btn-group {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-            margin-bottom: 10px;
-        }
-
-        /* 节点下拉列表样式 */
-        .node-select {
-            flex: 1;
-            min-width: 80px;
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 13px;
-            background-color: white;
-            color: #333;
-            cursor: pointer;
-        }
-
-        /* 遮罩层 */
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 80;
-            display: none;
-        }
-
-        /* 手机端适配 */
-        @media (max-width: 768px) {
-            .joystick-wrapper {
-                width: 200px;
-                height: 200px;
-            }
-
-            .joystick-base {
-                width: 160px;
-                height: 160px;
-            }
-
-            .joystick-knob {
-                width: 70px;
-                height: 70px;
-            }
-
-            #side-panel {
-                width: 100%;
-            }
-
-            .top-nav h1 {
-                font-size: 16px;
-            }
-
-            .func-btn {
-                padding: 5px 10px;
-                font-size: 13px;
-            }
-
-            #map-controls {
-                padding: 8px;
-                width: 250px;
-                /* 手机端控制栏缩窄，日志栏同步 */
-            }
-
-            #map-controls button {
-                padding: 6px 8px;
-                font-size: 12px;
-            }
-
-            /* 手机端日志栏同步适配 */
-            #ros-log-panel {
-                width: 250px;
-                /* 与控制栏同宽 */
-                bottom: 10px;
-                /* 保持延伸至底部 */
-            }
-
-            .sys-btn-group {
-                grid-template-columns: 1fr;
-            }
-
-            /* 手机端调试按钮组改为2列 */
-            .debug-btn-group {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <!-- 新增：ROS连接状态栏（适配 ROSHandler） -->
     <div class="connection-status-bar">
         <div id="robotStatus"></div>
         <div id="connectionStatus" class="disconnected">Connected Robot Error</div>
     </div>
 
-    <!-- 顶部导航栏 -->
     <div class="top-nav">
         <h1>机器人控制中心</h1>
         <div>
@@ -692,12 +22,9 @@
         </div>
     </div>
 
-    <!-- 主内容区 -->
     <div class="main-content">
-        <!-- 地图区域 -->
         <div id="map-area">
             <canvas id="map-canvas"></canvas>
-            <!-- 地图控制悬浮栏 -->
             <div id="map-controls">
                 <div class="control-label">地图控制</div>
                 <div class="control-group">
@@ -727,30 +54,23 @@
                 </div>
             </div>
 
-            <!-- 优化：ROS日志栏（仅显示接收到的日志） -->
             <div id="ros-log-panel">
-                <div class="log-label">ROS 实时日志（仅接收）</div>
+                <div class="log-label">机器人实时日志</div>
                 <ul id="ros-log-list"></ul>
             </div>
 
-            <!-- 状态提示框 -->
             <div id="status-toast">连接状态：未连接</div>
-            <!-- 地图锁定提示 -->
             <div class="map-lock-toast" id="map-lock-toast">地图已锁定，单击获取坐标</div>
         </div>
 
-        <!-- 右侧功能面板 -->
         <div id="side-panel">
             <div class="panel-header">
                 <span>功能面板</span>
                 <button class="close-btn" id="close-panel">×</button>
             </div>
             <div class="panel-content">
-                <!-- 机器人状态（电池与充电状态合并） -->
                 <div class="collapse-panel">
-                    <div class="collapse-header active" data-target="state-body">
-                        机器人状态
-                    </div>
+                    <div class="collapse-header active" data-target="state-body">机器人状态</div>
                     <div class="collapse-body show" id="state-body">
                         <div class="state-grid">
                             <div class="battery-item">
@@ -765,11 +85,8 @@
                     </div>
                 </div>
 
-                <!-- 摇杆控制（移除紧急停止按钮） -->
                 <div class="collapse-panel">
-                    <div class="collapse-header" data-target="joystick-body">
-                        摇杆控制
-                    </div>
+                    <div class="collapse-header" data-target="joystick-body">摇杆控制</div>
                     <div class="collapse-body" id="joystick-body">
                         <div class="joystick-container">
                             <div class="joystick-title">拖动摇杆控制机器人</div>
@@ -777,197 +94,89 @@
                                 <div class="joystick-base"></div>
                                 <div class="joystick-knob" id="joystick-knob"></div>
                             </div>
+                            <button class="nav-btn primary" id="btn-sensor-control"
+                                style="margin-top: 15px;">开启体感控制</button>
                             <div class="joystick-hint">松开摇杆自动停止 | 拖动越远速度越快</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 导航功能 -->
                 <div class="collapse-panel">
-                    <div class="collapse-header" data-target="nav-body">
-                        导航功能
-                    </div>
+                    <div class="collapse-header" data-target="nav-body">导航功能</div>
                     <div class="collapse-body" id="nav-body">
                         <div class="param-row">
                             <label>选择节点</label>
                             <select id="node-select" class="node-select">
                                 <option value="">请选择节点</option>
                             </select>
-                            <button class="nav-btn" id="btn-set-goal-from-node">设置目标点</button>
+                            <button class="nav-btn primary" id="btn-set-goal-from-node">设置目标点</button>
                         </div>
                         <div class="nav-actions">
                             <button class="nav-btn primary" id="btn-start-nav">开始导航</button>
-                            <button class="nav-btn" id="btn-stop-nav">停止导航</button>
+                            <button class="nav-btn primary" id="btn-stop-nav">停止导航</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 系统设置（完整保留指定功能） -->
                 <div class="collapse-panel">
-                    <div class="collapse-header" data-target="sys-body">
-                        系统设置
-                    </div>
+                    <div class="collapse-header" data-target="sys-body">系统设置</div>
                     <div class="collapse-body" id="sys-body">
                         <div class="param-row">
                             <label>节点名称</label>
                             <input type="text" id="node-name" placeholder="输入节点名">
-                            <button class="nav-btn" id="btn-add-node">插入节点</button>
+                            <button class="nav-btn primary" id="btn-add-node">插入节点</button>
                         </div>
                         <div class="sys-btn-group">
-                            <button class="nav-btn" id="btn-del-node">删除节点</button>
-                            <button class="nav-btn" id="btn-save-path">保存</button>
-                            <button class="nav-btn" id="btn-connect-node">连接节点</button>
-                            <button class="nav-btn" id="btn-del-connect">删除连接</button>
-                            <button class="nav-btn" id="btn-modify-dir">修改方向</button>
-                            <button class="nav-btn" id="btn-set-charge">设置充电点</button>
-                            <button class="nav-btn" id="btn-onekey-charge">一键充电</button>
-                            <button class="nav-btn" id="btn-end-charge">结束充电</button>
+                            <button class="nav-btn primary" id="btn-del-node">删除节点</button>
+                            <button class="nav-btn primary" id="btn-save-path">保存</button>
+                            <button class="nav-btn primary" id="btn-connect-node">连接节点</button>
+                            <button class="nav-btn primary" id="btn-del-connect">删除连接</button>
+                            <button class="nav-btn primary" id="btn-modify-dir">修改方向</button>
+                            <button class="nav-btn primary" id="btn-set-charge">设置充电点</button>
+                            <button class="nav-btn primary" id="btn-onekey-charge">一键充电</button>
+                            <button class="nav-btn primary" id="btn-end-charge">结束充电</button>
                         </div>
 
-                        <!-- 新增：调试控制按钮组 -->
                         <div class="control-label" style="font-size:14px; color:#333; margin:12px 0 6px 0;">调试控制</div>
                         <div class="debug-btn-group">
-                            <button class="nav-btn" id="btn-left-feed">左侧上料</button>
-                            <button class="nav-btn" id="btn-right-feed">右侧上料</button>
-                            <button class="nav-btn" id="btn-left-unload">左侧下料</button>
-                            <button class="nav-btn" id="btn-right-unload">右侧下料</button>
-                            <button class="nav-btn" id="btn-reflection-debug" colspan="3">开启反光贴调试</button>
+                            <button class="nav-btn primary" id="btn-left-feed">左侧上料</button>
+                            <button class="nav-btn primary" id="btn-right-feed">右侧上料</button>
+                            <button class="nav-btn primary" id="btn-left-unload">左侧下料</button>
+                            <button class="nav-btn primary" id="btn-right-unload">右侧下料</button>
+                            <button class="nav-btn primary" id="btn-reflection-debug" colspan="3">开启反光贴调试</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- 遮罩层 -->
         <div id="overlay"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/roslib@1.4.0/build/roslib.min.js"></script>
+    <script src="js/easeljs.min.js"></script>
+    <script src="js/eventemitter2.min.js"></script>
+    <script src="js/roslib.min.js"></script>
+    <script src="js/ros2d.min.js"></script>
+    <script src="js/ros3d.min.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/createjs.min.js"></script>
+    <script src="js/ros_init.js"></script>
     <script>
-        // -------------------------- 第一步：定义 ROSHandler 类（完整复用你的代码，修复小问题） --------------------------
-        // ROS Initialization
-        const ROS_WS_URL = 'ws://localhost:9090';
-        class ROSHandler {
-            constructor(wsUrl) {
-                this.wsUrl = wsUrl;
-                this.ros = null;
-                this.subTopics = new Map();
-                this.pubTopics = new Map();
-                this.connectStatus = false;
-                this.reconnectDelay = 2000;
-                // 新增：断线重连定时器
-                this.reconnectTimer = null;
-            }
-
-            connect() {
-                if (this.ros) this.ros.close();
-                this.ros = new ROSLIB.Ros({ url: this.wsUrl });
-
-                this.ros.on('connection', () => {
-                    console.log('ROS连接成功，重建话题...');
-                    this._rebuildSubTopics();
-                    this._rebuildPubTopics();
-                    this.connectStatus = true;
-                    // 清除重连定时器
-                    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-                    this.updateConnectionStatus(true);
-                });
-
-                this.ros.on('close', () => {
-                    console.log('ROS连接关闭，将在2秒后重连...');
-                    this.connectStatus = false;
-                    this.updateConnectionStatus(false);
-                    this._scheduleReconnect();
-                });
-
-                this.ros.on('error', (err) => {
-                    //console.error('ROS连接错误：', err);
-                    console.log('ROS连接错误，将在2秒后重连...');
-                    this.connectStatus = false;
-                    this.updateConnectionStatus(false);
-                    this._scheduleReconnect();
-                });
-            }
-
-            // 修复：原代码中 updateConnectionStatus 未绑定到类实例，此处改为类方法
-            updateConnectionStatus(connected) {
-                document.getElementById('robotStatus').style.backgroundColor = connected ? 'green' : 'red';
-                document.getElementById('connectionStatus').className = connected ? 'connected' : 'disconnected';
-                document.getElementById('connectionStatus').innerText = connected ? 'Connected Robot OK' : 'Connected Robot Error';
-            }
-
-            registerSubTopic(topicName, messageType, callback) {
-                this.subTopics.set(topicName, { messageType, callback });
-            }
-
-            _rebuildSubTopics() {
-                this.subTopics.forEach(({ messageType, callback }, topicName) => {
-                    const topic = new ROSLIB.Topic({ ros: this.ros, name: topicName, messageType });
-                    topic.subscribe((msg) => {
-                        this.lastMsgTime = Date.now();
-                        callback(msg);
-                    });
-                    this.subTopics.set(topicName, { ...this.subTopics.get(topicName), instance: topic });
-                });
-            }
-
-            registerPubTopic(topicName, messageType) {
-                this.pubTopics.set(topicName, { messageType });
-            }
-
-            _rebuildPubTopics() {
-                this.pubTopics.forEach(({ messageType }, topicName) => {
-                    const topic = new ROSLIB.Topic({ ros: this.ros, name: topicName, messageType });
-                    this.pubTopics.set(topicName, { ...this.pubTopics.get(topicName), instance: topic });
-                });
-            }
-
-            publish(topicName, message) {
-                if (!this.ros || !this.connectStatus) {
-                    console.warn('连接未建立，无法发布消息');
-                    return;
-                }
-                const pubTopic = this.pubTopics.get(topicName);
-                if (!pubTopic || !pubTopic.instance) {
-                    console.error(`未注册发布话题：${topicName}，请先调用registerPubTopic`);
-                    return;
-                }
-                pubTopic.instance.publish(message);
-            }
-
-            // 新增：调度断线重连
-            _scheduleReconnect() {
-                if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-                this.reconnectTimer = setTimeout(() => {
-                    this.connect();
-                }, this.reconnectDelay);
-            }
-        }
-
-        // 实例化 ROSHandler
-        const rosHandler = new ROSHandler(ROS_WS_URL);
-
-        // -------------------------- 第二步：界面元素与全局变量初始化 --------------------------
+        // 全局变量初始化
         const canvas = document.getElementById('map-canvas');
         const ctx = canvas.getContext('2d');
         const statusToast = document.getElementById('status-toast');
         const mapLockToast = document.getElementById('map-lock-toast');
-
-        // 优化：ROS日志栏元素（仅接收/rosout日志）
         const rosLogList = document.getElementById('ros-log-list');
         const rosLogPanel = document.getElementById('ros-log-panel');
         const mapControls = document.getElementById('map-controls');
-        // 日志最大显示条数，防止溢出（仅针对接收的ROS日志）
         const MAX_LOG_ITEMS = 50;
 
-        // 界面控制元素
+        // DOM元素获取
         const btnShowPanel = document.getElementById('btn-show-panel');
         const btnShowRemote = document.getElementById('btn-show-remote');
         const btnClosePanel = document.getElementById('close-panel');
         const sidePanel = document.getElementById('side-panel');
         const overlay = document.getElementById('overlay');
-
-        // 地图控制元素
         const resetViewBtn = document.getElementById('reset-view');
         const zoomInBtn = document.getElementById('zoom-in');
         const zoomOutBtn = document.getElementById('zoom-out');
@@ -978,22 +187,14 @@
         const showPointcloudCheckbox = document.getElementById('show-pointcloud');
         const showMarkersCheckbox = document.getElementById('show-markers');
         const showRobotCheckbox = document.getElementById('show-robot');
-
-        // 电池与充电状态合并元素
         const batteryFill = document.getElementById('battery-fill');
         const batteryPercent = document.getElementById('battery-percent');
         const chargeText = document.getElementById('charge-text');
-
-        // 摇杆控制元素（无紧急停止）
         const joystickKnob = document.getElementById('joystick-knob');
-
-        // 导航按钮
         const btnStartNav = document.getElementById('btn-start-nav');
         const btnStopNav = document.getElementById('btn-stop-nav');
         const btnSetGoalFromNode = document.getElementById('btn-set-goal-from-node');
         const nodeSelect = document.getElementById('node-select');
-
-        // 系统设置按钮（完整功能）
         const btnAddNode = document.getElementById('btn-add-node');
         const btnDelNode = document.getElementById('btn-del-node');
         const btnSavePath = document.getElementById('btn-save-path');
@@ -1004,53 +205,37 @@
         const btnOnekeyCharge = document.getElementById('btn-onekey-charge');
         const btnEndCharge = document.getElementById('btn-end-charge');
         const nodeNameInput = document.getElementById('node-name');
-
-        // 新增：调试控制按钮元素
         const btnLeftFeed = document.getElementById('btn-left-feed');
         const btnRightFeed = document.getElementById('btn-right-feed');
         const btnLeftUnload = document.getElementById('btn-left-unload');
         const btnRightUnload = document.getElementById('btn-right-unload');
         const btnReflectionDebug = document.getElementById('btn-reflection-debug');
 
-        // 新增：反光贴调试状态标记
+        // 状态变量
         let isReflectionDebugActive = false;
-
-        // 数据存储
         let mapData = null;
         let robotPose = null;
         let markerArrayData = null;
         let pointCloudData = null;
         let offscreenCanvas, offscreenCtx;
-
-        // 视图状态
-        let viewState = {
-            scale: 10.0,
-            rotation: 0.0,
-            translateX: 0,
-            translateY: 0
-        };
+        let nodeMap = null;
+        let viewState = { scale: 10.0, rotation: 0.0, translateX: 0, translateY: 0 };
         let isDragging = false;
         let dragStart = { x: 0, y: 0 };
         let isViewDirty = true;
         let isSettingInitPose = false;
         let initPoseStartPos = null;
         let initPoseCurrentPos = null;
-
-        // 摇杆控制相关变量
         let isJoystickActive = false;
         const joystickRadius = 90;
         const maxSpeed = 0.3;
         let joystickCenter = { x: 0, y: 0 };
-
-        // 地图点获取功能变量
         let isGetClickedPointMode = false;
-
-        // 系统设置状态变量（按钮切换逻辑）
         let isConnectingNode = false;
         let isDeletingConnect = false;
+        let taskPointData = null;
 
-        // -------------------------- 第三步：界面辅助函数 --------------------------
-        // Canvas自适应大小
+        // 界面辅助函数
         function resizeCanvas() {
             const mapArea = document.getElementById('map-area');
             canvas.width = mapArea.clientWidth;
@@ -1058,17 +243,13 @@
             isViewDirty = true;
         }
 
-        // 优化：日志栏位置初始化（确保不遮挡控制栏）
         function initLogPanelPosition() {
             const controlsHeight = mapControls.offsetHeight;
             const controlsTop = parseInt(window.getComputedStyle(mapControls).top);
-            // 控制栏下方+10px间距，避免紧贴遮挡
             rosLogPanel.style.top = `${controlsTop + controlsHeight + 10}px`;
-            // 确保日志栏与控制栏同宽
             rosLogPanel.style.width = `${mapControls.offsetWidth}px`;
         }
 
-        // 折叠面板控制
         document.querySelectorAll('.collapse-header').forEach(header => {
             header.addEventListener('click', () => {
                 const targetId = header.getAttribute('data-target');
@@ -1078,179 +259,52 @@
             });
         });
 
-        // 侧边面板控制
         function showPanel() {
             sidePanel.classList.add('show');
             overlay.classList.add('show');
         }
+
         function hidePanel() {
             sidePanel.classList.remove('show');
             overlay.classList.remove('show');
         }
 
-        // 电池与充电状态合并更新
         function updateRobotState(state) {
             const battery = Math.max(0, Math.min(100, state.battery || 0));
             const isCharging = state.charge === '充电中' || state.charge === '已充满';
 
-            // 更新电池进度和百分比
             batteryFill.style.width = `${battery}%`;
             batteryPercent.textContent = `${battery}%`;
 
-            // 更新充电状态样式
             if (isCharging) {
                 batteryFill.classList.add('charging');
                 chargeText.classList.add('show');
             } else {
                 batteryFill.classList.remove('charging');
                 chargeText.classList.remove('show');
-                // 恢复电池颜色（低电量红色，正常绿色）
                 batteryFill.style.backgroundColor = battery < 20 ? '#ff4444' : '#22c322';
             }
         }
 
-        // 优化：仅添加接收到的ROS日志，无手动埋点日志
         function addRosLog(level, message) {
-            // 1. 创建日志项
             const logItem = document.createElement('li');
             logItem.className = level;
-            // 添加时间戳（本地时间，方便追溯ROS日志时间）
             const now = new Date();
             const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
             logItem.textContent = `[${timeStr}] ${message}`;
 
-            // 2. 添加到列表头部（最新日志在最上方）
             rosLogList.insertBefore(logItem, rosLogList.firstChild);
 
-            // 3. 限制日志条数，超出则删除最旧的
             if (rosLogList.children.length > MAX_LOG_ITEMS) {
                 rosLogList.removeChild(rosLogList.lastChild);
             }
 
-            // 4. 自动滚动到顶部（显示最新日志）
             rosLogList.scrollTop = 0;
         }
 
-        // -------------------------- 第四步：ROS话题注册（基于 ROSHandler） --------------------------
-        // 1. 注册所有订阅话题
-        function registerAllSubTopics() {
-            // 地图话题
-            rosHandler.registerSubTopic('/map', 'nav_msgs/OccupancyGrid', (message) => {
-                mapData = message;
-                initOffscreenCanvas();
-                drawOffscreenMap();
-                resetView();
-                isViewDirty = true;
-            });
 
-            // 机器人位姿话题
-            rosHandler.registerSubTopic('/robot_pose', 'geometry_msgs/PoseStamped', (message) => {
-                robotPose = message;
-                isViewDirty = true;
-            });
 
-            // 节点列表（MarkerArray）话题
-            rosHandler.registerSubTopic('/node_list', 'visualization_msgs/MarkerArray', (message) => {
-                markerArrayData = message.markers;
-                isViewDirty = true;
-                updateNodeSelectList();
-            });
-
-            // 点云话题
-            rosHandler.registerSubTopic('/scan_points', 'sensor_msgs/PointCloud', (message) => {
-                pointCloudData = message;
-                isViewDirty = true;
-                if (rosHandler.connectStatus) {
-                    statusToast.textContent = `已连接 ROS | 点云点数：${message.points.length}`;
-                }
-            });
-
-            // 电池状态话题
-            rosHandler.registerSubTopic('/battery_info', 'sensor_msgs/BatteryState', (message) => {
-                try {
-                    // 解析BatteryState消息格式
-                    let batteryPercentage = 0;
-                    let chargeStatus = '未充电';
-
-                    // 1. 计算电池百分比（优先使用percentage，无则通过voltage计算）
-                    if (message.percentage !== undefined && !isNaN(message.percentage)) {
-                        batteryPercentage = Math.round(message.percentage * 100);
-                    } else if (message.voltage !== undefined && !isNaN(message.voltage)) {
-                        // 示例：锂电池电压范围（3.0V-4.2V）映射为0-100%，可根据实际机器人电池参数调整
-                        const minVoltage = 3.0;
-                        const maxVoltage = 4.2;
-                        const clampedVoltage = Math.max(minVoltage, Math.min(maxVoltage, message.voltage));
-                        batteryPercentage = Math.round(((clampedVoltage - minVoltage) / (maxVoltage - minVoltage)) * 100);
-                    }
-
-                    // 2. 判断充电状态（根据power_supply_status和power_supply_health）
-                    // power_supply_status：0=UNKNOWN, 1=CHARGING, 2=DISCHARGING, 3=NOT_CHARGING, 4=FULL
-                    if (message.power_supply_status === 1) {
-                        chargeStatus = '充电中';
-                    } else if (message.power_supply_status === 4) {
-                        chargeStatus = '已充满';
-                    } else {
-                        chargeStatus = '未充电';
-                    }
-
-                    // 3. 更新电池状态界面
-                    updateRobotState({
-                        battery: batteryPercentage,
-                        charge: chargeStatus
-                    });
-                } catch (e) {
-                    console.error('解析电池状态失败:', e);
-                }
-            });
-
-            // ROS日志话题（仅接收/rosout）
-            rosHandler.registerSubTopic('/rosout', 'rosgraph_msgs/Log', (message) => {
-                // 日志级别映射：0=DEBUG,1=INFO,2=WARN,3=ERROR,4=FATAL
-                const levelMap = {
-                    0: 'debug',
-                    1: 'info',
-                    2: 'warn',
-                    3: 'error',
-                    4: 'fatal'
-                };
-                const logLevel = levelMap[message.level] || 'debug';
-                const logContent = `[${message.name}] ${message.msg}`;
-
-                // 仅添加接收到的ROS日志到界面
-                addRosLog(logLevel, logContent);
-            });
-        }
-
-        // 2. 注册所有发布话题
-        function registerAllPubTopics() {
-            rosHandler.registerPubTopic('/remote_cmd', 'std_msgs/Header');
-            rosHandler.registerPubTopic('/clicked_point', 'geometry_msgs/PointStamped');
-            rosHandler.registerPubTopic('/move_base_simple/goal', 'geometry_msgs/PoseStamped');
-            rosHandler.registerPubTopic('/ui_cmd_vel', 'geometry_msgs/Twist');
-            rosHandler.registerPubTopic('/initialpose', 'geometry_msgs/PoseWithCovarianceStamped');
-        }
-
-        // 3. 封装/remote_cmd话题发布工具函数
-        function publishRemoteCmd(seq, frameId = '') {
-            if (!rosHandler.connectStatus) {
-                statusToast.textContent = '未连接ROS，无法发布/remote_cmd话题';
-                return false;
-            }
-            const now = new Date();
-            const headerMsg = new ROSLIB.Message({
-                seq: seq,
-                stamp: {
-                    secs: Math.floor(now.getTime() / 1000),
-                    nsecs: (now.getTime() % 1000) * 1000000
-                },
-                frame_id: frameId || ''
-            });
-            rosHandler.publish('/remote_cmd', headerMsg);
-            console.log(`已发布/remote_cmd（seq=${seq}）：`, headerMsg);
-            return true;
-        }
-
-        // -------------------------- 第五步：画布绘制与地图控制 --------------------------
+        // 画布绘制
         function initOffscreenCanvas() {
             if (!mapData || offscreenCanvas) return;
             offscreenCanvas = document.createElement('canvas');
@@ -1304,15 +358,12 @@
 
             const centeredX = screenX - canvas.width / 2;
             const centeredY = -(screenY - canvas.height / 2);
-
             const scaledX = centeredX / viewState.scale;
             const scaledY = centeredY / viewState.scale;
-
             const cos = Math.cos(-viewState.rotation);
             const sin = Math.sin(-viewState.rotation);
             const rotatedX = scaledX * cos - scaledY * sin;
             const rotatedY = scaledX * sin + scaledY * cos;
-
             const translatedX = rotatedX - viewState.translateX;
             const translatedY = rotatedY - viewState.translateY;
 
@@ -1376,11 +427,9 @@
 
             ctx.save();
 
-            if (marker.color) {
-                ctx.strokeStyle = getColor(marker.color);
-            } else {
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
-            }
+            if (marker.color) ctx.strokeStyle = getColor(marker.color);
+            else ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+
             const info = mapData.info;
             const baseLineWidth = marker.scale?.x || 0.1;
             ctx.lineWidth = (baseLineWidth / info.resolution) * viewState.scale * 2;
@@ -1488,10 +537,13 @@
         }
 
         function drawMarker(marker) {
+            if (!marker) return;
             if (marker.type === 2 || marker.type === 9) drawText(marker);
             if (marker.type === 5) drawLineStrip(marker);
             if (marker.type === 2) drawSphere(marker);
         }
+
+
 
         function draw() {
             if (!isViewDirty && !isSettingInitPose) return;
@@ -1512,12 +564,11 @@
 
             drawPointCloud();
 
-            if (markerArrayData) {
-                markerArrayData.forEach(marker => drawMarker(marker));
-            }
+            if (markerArrayData) markerArrayData.forEach(marker => drawMarker(marker));
 
             drawRobot();
             drawInitPose();
+            drawMarker(taskPointData);
 
             isViewDirty = false;
         }
@@ -1548,9 +599,7 @@
             if (isSettingInitPose) {
                 initPoseBtn.textContent = "取消位姿";
                 statusToast.textContent = "设置初始位姿：单击拖拽确定位置和方向";
-                if (isGetClickedPointMode) {
-                    toggleGetClickedPointMode(false);
-                }
+                if (isGetClickedPointMode) toggleGetClickedPointMode(false);
             } else {
                 initPoseBtn.textContent = "初始位姿";
                 setTimeout(() => {
@@ -1578,8 +627,7 @@
             isViewDirty = true;
         }
 
-        // -------------------------- 第六步：功能模块逻辑 --------------------------
-        // 地图点获取功能
+        // 功能模块逻辑
         function toggleGetClickedPointMode(enable) {
             isGetClickedPointMode = enable;
             const mapArea = document.getElementById('map-area');
@@ -1589,9 +637,7 @@
                 mapLockToast.classList.add('show');
                 mapArea.style.cursor = 'crosshair';
                 statusToast.textContent = '已开启获取地图点，单击地图发布坐标';
-                if (isSettingInitPose) {
-                    toggleInitPoseMode(false);
-                }
+                if (isSettingInitPose) toggleInitPoseMode(false);
             } else {
                 getClickedPointBtn.classList.remove('active');
                 mapLockToast.classList.remove('show');
@@ -1636,12 +682,11 @@
             statusToast.textContent = `已发布坐标: (${worldPos.x.toFixed(3)}, ${worldPos.y.toFixed(3)}, ${worldPos.z.toFixed(3)})`;
         }
 
-        // 节点下拉列表更新
         function updateNodeSelectList() {
             if (!markerArrayData) return;
 
             nodeSelect.innerHTML = '<option value="">请选择节点</option>';
-            const nodeMap = new Map();
+            nodeMap = new Map();
 
             const textMarkers = markerArrayData.filter(marker => marker.type === 9);
             const sphereMarkers = markerArrayData.filter(marker => marker.type === 2);
@@ -1664,7 +709,6 @@
             }
         }
 
-        // 摇杆控制逻辑
         function initJoystickCenter() {
             const wrapper = document.querySelector('.joystick-wrapper');
             const rect = wrapper.getBoundingClientRect();
@@ -1690,7 +734,7 @@
             const linearX = -dy / joystickRadius * maxSpeed;
             const angularZ = -dx / joystickRadius * 1.0;
 
-            rosHandler.publish('/cmd_vel', new ROSLIB.Message({
+            rosHandler.publish('/ui_cmd_vel', new ROSLIB.Message({
                 linear: { x: linearX, y: 0, z: 0 },
                 angular: { x: 0, y: 0, z: angularZ }
             }));
@@ -1700,13 +744,12 @@
             isJoystickActive = false;
             joystickKnob.style.transform = 'translate(0, 0)';
 
-            rosHandler.publish('/cmd_vel', new ROSLIB.Message({
+            rosHandler.publish('/ui_cmd_vel', new ROSLIB.Message({
                 linear: { x: 0, y: 0, z: 0 },
                 angular: { x: 0, y: 0, z: 0 }
             }));
         }
 
-        // 新增：反光贴调试状态切换函数
         function toggleReflectionDebug() {
             isReflectionDebugActive = !isReflectionDebugActive;
             if (isReflectionDebugActive) {
@@ -1718,23 +761,19 @@
                 btnReflectionDebug.classList.remove('reflection-active');
                 statusToast.textContent = '已关闭反光贴调试模式';
             }
-            // 发布seq=20的指令
             publishRemoteCmd(20);
         }
 
-        // -------------------------- 第七步：事件绑定 --------------------------
-        // 窗口大小变化监听
+        // 事件绑定
         window.addEventListener('resize', () => {
             resizeCanvas();
-            initLogPanelPosition(); // 同步日志栏位置
+            initLogPanelPosition();
         });
 
-        // 侧边面板事件
         btnShowPanel.addEventListener('click', showPanel);
         btnClosePanel.addEventListener('click', hidePanel);
         overlay.addEventListener('click', hidePanel);
 
-        // 直接显示摇杆控制
         btnShowRemote.addEventListener('click', () => {
             showPanel();
             const joystickHeader = document.querySelector('[data-target="joystick-body"]');
@@ -1744,7 +783,6 @@
             joystickHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
 
-        // 地图控制事件
         resetViewBtn.addEventListener('click', resetView);
         initPoseBtn.addEventListener('click', () => toggleInitPoseMode(!isSettingInitPose));
         getClickedPointBtn.addEventListener('click', () => toggleGetClickedPointMode(!isGetClickedPointMode));
@@ -1757,7 +795,6 @@
         showRobotCheckbox.addEventListener('change', () => isViewDirty = true);
         canvas.addEventListener('click', handleMapClick);
 
-        // 地图滚轮缩放
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             if (isGetClickedPointMode || isSettingInitPose) return;
@@ -1767,7 +804,6 @@
             statusToast.textContent = `地图缩放：${(viewState.scale).toFixed(1)}倍`;
         });
 
-        // 地图拖拽事件
         canvas.addEventListener('mousedown', (e) => {
             e.preventDefault();
             if (isGetClickedPointMode) return;
@@ -1854,7 +890,7 @@
             isDragging = false;
         });
 
-        // 摇杆事件绑定
+        // 摇杆事件
         joystickKnob.addEventListener('mousedown', (e) => {
             e.preventDefault();
             isJoystickActive = true;
@@ -1886,14 +922,10 @@
         });
 
         ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(event => {
-            document.addEventListener(event, () => {
-                if (isJoystickActive) {
-                    resetJoystick();
-                }
-            });
+            document.addEventListener(event, () => isJoystickActive && resetJoystick());
         });
 
-        // 导航功能事件
+        // 导航功能
         btnSetGoalFromNode.addEventListener('click', () => {
             const selectedNodeName = nodeSelect.value;
             if (!selectedNodeName || !nodeMap.has(selectedNodeName)) {
@@ -1901,13 +933,11 @@
                 return;
             }
 
-            // 1. 原有目标点设置逻辑
             const nodePos = nodeMap.get(selectedNodeName);
             const goalX = nodePos.x;
             const goalY = nodePos.y;
             statusToast.textContent = `已设置目标点：${selectedNodeName} (${goalX.toFixed(3)}, ${goalY.toFixed(3)})`;
 
-            // 2. 发布/remote_cmd话题
             publishRemoteCmd(7, selectedNodeName);
         });
 
@@ -1919,21 +949,19 @@
                 const nodePos = nodeMap.get(selectedNodeName);
                 goalX = nodePos.x;
                 goalY = nodePos.y;
+                statusToast.textContent = '选择节点: ' + selectedNodeName;
             } else {
-                statusToast.textContent = '未选择节点，使用默认目标点(0.000, 0.000)';
+                statusToast.textContent = '未选择节点';
+                return;
             }
 
-            // 2. 发布/remote_cmd话题
             const publishSuccess = publishRemoteCmd(8, selectedNodeName || '');
             if (publishSuccess) {
                 statusToast.textContent = `导航目标：(${goalX.toFixed(3)}, ${goalY.toFixed(3)})，已发布/remote_cmd`;
             }
 
-            // 3. 收尾逻辑
             resetJoystick();
-            if (isGetClickedPointMode) {
-                toggleGetClickedPointMode(false);
-            }
+            if (isGetClickedPointMode) toggleGetClickedPointMode(false);
         });
 
         btnStopNav.addEventListener('click', () => {
@@ -1944,7 +972,7 @@
             }
         });
 
-        // 系统设置功能事件
+        // 系统设置
         btnConnectNode.addEventListener('click', () => {
             isConnectingNode = !isConnectingNode;
             if (isConnectingNode) {
@@ -2058,62 +1086,45 @@
             }
         });
 
-        // 新增：调试控制按钮事件绑定
+        // 调试控制
         btnLeftFeed.addEventListener('click', () => {
             const publishSuccess = publishRemoteCmd(2);
-            if (publishSuccess) {
-                statusToast.textContent = '已发送左侧上料指令（seq=2）';
-            }
+            if (publishSuccess) statusToast.textContent = '已发送左侧上料指令（seq=2）';
         });
 
         btnRightFeed.addEventListener('click', () => {
             const publishSuccess = publishRemoteCmd(3);
-            if (publishSuccess) {
-                statusToast.textContent = '已发送右侧上料指令（seq=3）';
-            }
+            if (publishSuccess) statusToast.textContent = '已发送右侧上料指令（seq=3）';
         });
 
         btnLeftUnload.addEventListener('click', () => {
             const publishSuccess = publishRemoteCmd(4);
-            if (publishSuccess) {
-                statusToast.textContent = '已发送左侧下料指令（seq=4）';
-            }
+            if (publishSuccess) statusToast.textContent = '已发送左侧下料指令（seq=4）';
         });
 
         btnRightUnload.addEventListener('click', () => {
             const publishSuccess = publishRemoteCmd(5);
-            if (publishSuccess) {
-                statusToast.textContent = '已发送右侧下料指令（seq=5）';
-            }
+            if (publishSuccess) statusToast.textContent = '已发送右侧下料指令（seq=5）';
         });
 
         btnReflectionDebug.addEventListener('click', toggleReflectionDebug);
 
-        // -------------------------- 第八步：初始化启动 --------------------------
-        // 1. 注册所有ROS话题
+        // 初始化
         registerAllSubTopics();
         registerAllPubTopics();
-
-        // 2. 初始化界面
         resizeCanvas();
         initLogPanelPosition();
         initJoystickCenter();
-
-        // 3. 启动动画循环
         animate();
-
-        // 4. 建立ROS连接
         rosHandler.connect();
 
-        // 5. 面板滚动时重新计算摇杆中心
         document.querySelector('.panel-content').addEventListener('scroll', initJoystickCenter);
 
-        // 6. 页面卸载时清理
         window.addEventListener('beforeunload', () => {
-            // 清除重连定时器，避免内存泄漏
             if (rosHandler.reconnectTimer) clearTimeout(rosHandler.reconnectTimer);
         });
     </script>
+    <script type="text/javascript" src="js/sensor_control.js"></script>
 </body>
 
 </html>

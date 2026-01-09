@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>cross_control</name>
+  <version>1.0.0</version>
+  <description>ROS node for cross belt load/unload control with CANopen motor, action server, and motor fault handling</description>
+ <maintainer email="821022334@qq.com">Your Name</maintainer>
+  <license>MIT</license>
+
+  <!-- 编译依赖 -->
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <!-- 编译/运行依赖 -->
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>can_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  
+  <!-- 构建依赖（生成Action/Message） -->
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+
+  
+  
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>

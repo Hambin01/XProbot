@@ -1,7 +1,7 @@
 <launch>
 
   <!--启动irobot机器人-->
-
+   <include file="$(find base_driver)/launch/base_driver.launch"></include>
    <include file="$(find robot_pose_publisher)/launch/robot_pose.launch"></include>
    <include file="$(find pointcloud_to_laserscan)/launch/laserscan_to_pointcloud_node.launch"></include>
    <include file="$(find link_visual)/launch/link_visual.launch"></include>
@@ -9,6 +9,8 @@
    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
    <include file="$(find remote_control)/launch/remote_control.launch"></include>
    <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"></include>
+   <include file="$(find relay_control)/launch/relay_control.launch"></include>
+   <include file="$(find cross_control)/launch/cross_control.launch"></include>
 
   <node pkg="tf" type="static_transform_publisher" name="base2link" args="0 0 0 0 0 0    base_link link_1   25" />
   <node name="map_server" pkg="map_server" type="map_server" args="$(find robot_launch)/maps/map.yaml" >

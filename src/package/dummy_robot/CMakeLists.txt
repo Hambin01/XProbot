@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   message_generation
   visualization_msgs
-  robot_state_msgs
 )
 find_package(yaml-cpp REQUIRED) 
 IF(YamlCpp_FOUND) 

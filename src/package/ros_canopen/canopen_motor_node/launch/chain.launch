@@ -1,0 +1,6 @@
+<launch>
+  
+  <node name="canopen_chain_motor" pkg="canopen_motor_node" type="canopen_motor_node" output="screen" clear_params="true">
+    <rosparam command="load" file="$(find canopen_motor_node)/config/node.yaml" />
+  </node>
+</launch>

@@ -1,0 +1,19 @@
+# CAN 总线配置
+bus:
+  device: "vcan0"  # 对应步骤 1 配置的 CAN 接口名
+  baudrate: 500000       # 波特率（需与从站设备一致）
+  sync_interval: 10000    # 同步周期（单位：us，10000=10ms，即 100Hz）
+  heartbeat: 1000         # 心跳周期（单位：ms，0 表示禁用）
+  loopback: true        # 是否启用环回模式（仅用于测试）
+sync:
+  interval_ms: 1000      # 同步报文发送间隔（单位：ms，0 表示禁用）
+  overflow: 20         # 是否启用同步溢出检测
+
+# 从站节点列表（多个从站按 ID 排序）
+motor:
+  name: "joint1"        # 电机关节名称（需与 joint_state 匹配）
+  type: "position"      # 初始控制模式（position/velocity/torque）
+  gear_ratio: 100.0     # 减速比（若有减速器，需配置以转换实际位置）
+  encoder_resolution: 4096  # 编码器分辨率（每转脉冲数）
+  max_velocity: 10.0    # 最大速度限制（rad/s）
+  max_torque: 5.0       # 最大扭矩限制（N·m）

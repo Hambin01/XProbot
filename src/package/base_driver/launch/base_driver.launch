@@ -1,0 +1,31 @@
+<launch>
+    <arg name="pub_tf" default="true" />
+    <node pkg="base_driver" type="base_driver_node" name="base_driver_node" output="screen" respawn="true">
+         <param name="left_motor_node_id" value="1"/>
+        <param name="right_motor_node_id" value="2"/>
+        <param name="power_timeout" value="3.0"/>
+        <param name="sdo_send_timeout" value="0.1"/>
+        
+        <param name="wheel_radius" value="0.295"/>
+        <param name="wheel_base" value="0.73"/>
+        <param name="gear_ratio" value="16.0"/>
+        <param name="max_speed_rpm" value="1500.0"/>
+        
+        <param name="linear_scale" value="1.0"/>
+        <param name="angular_scale" value="1.0"/>
+        <param name="pub_tf" value="true"/>
+        <param name="control_rate" value="25"/>
+    </node>
+
+    <node name="can_base_driver" pkg="socketcan_bridge" type="socketcan_bridge_node" respawn="true" output="screen">
+        <param name="can_device" value="vcan0" />
+        <rosparam>
+            can_ids:
+                - 0x581
+                - 0x582
+        </rosparam>
+        <remap from="sent_messages" to="send_can_message_driver" />
+        <remap from="received_messages" to="received_can_message_driver" />
+    </node>
+
+</launch>

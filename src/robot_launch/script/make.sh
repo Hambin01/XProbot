@@ -27,4 +27,11 @@ catkin_make  install --only-pkg-with-deps amcl_updater
 catkin_make  install --only-pkg-with-deps localization
 catkin_make  install --only-pkg-with-deps rosbridge_system
 catkin_make  install --only-pkg-with-deps robot_localization
+catkin_make  install --only-pkg-with-deps ros_canopen
+catkin_make  install --only-pkg-with-deps bluesea2
+catkin_make  install --only-pkg-with-deps hins_he_driver
+catkin_make  install --only-pkg-with-deps base_driver
+catkin_make  install --only-pkg-with-deps relay_control
+catkin_make  install --only-pkg-with-deps cross_control
+
 
