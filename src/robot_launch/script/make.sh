@@ -1,5 +1,7 @@
 #!/bin/bash
 cd ~/XProbot
+mkdir install
+
 catkin_make  install -j4  --only-pkg-with-deps robot_state_msgs
 catkin_make  install -j4  --only-pkg-with-deps robot_task_msgs
 catkin_make  install -j4  --only-pkg-with-deps cmd_vel_mux

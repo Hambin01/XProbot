@@ -63,7 +63,10 @@ install_pkg "ros-noetic-autolabor"
 install_pkg "libsdl1.2-dev"
 install_pkg "libsdl-image1.2"
 install_pkg "libmuparser-dev"
+install_pkg "libgtest-dev"
+install_pkg "libgmock-dev"
 install_pkg "nginx"
+install_pkg "ros-humble-cartographer"
 
 # 3. 安装Python包
 sep; info "3. 安装Python依赖"
@@ -104,31 +107,28 @@ fi
 
 # 5. 配置Cartographer
 sep; info "5. 配置Cartographer"
-CARTO_SRC="/opt/ros/humble/share/cartographer/configuration_files"
-CARTO_DEST="/home/robot/XProbot/$TARGET_DIR/robot_launch/carto_file"
-sudo mkdir -p "$(dirname "$CARTO_DEST")"
+CARTO_DEST="/opt/ros/humble/share/cartographer/configuration_files"
+CARTO_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/carto_file"
 create_link "$CARTO_DEST" "$CARTO_SRC" "Cartographer配置"
 sudo chmod 777 -R "$CARTO_SRC"
 
 # 6. 配置Nginx
 sep; info "6. 配置Nginx"
 ROBOT_VIEW_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/script/robot_view"
-ROBOT_VIEW_DEST="/var/www/robot_view"
+ROBOT_VIEW_DEST="/var/www/"
 ROBOT_CONF_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/script/robot.conf"
 ROBOT_CONF_DEST="/etc/nginx/conf.d/robot.conf"
 
-create_link "$ROBOT_VIEW_DEST" "$ROBOT_VIEW_SRC" "Nginx页面"
+sudo cp -r  "$ROBOT_VIEW_SRC" "$ROBOT_VIEW_DEST"
 create_link "$ROBOT_CONF_DEST" "$ROBOT_CONF_SRC" "Nginx配置"
 
-sudo chmod -R 755 "$ROBOT_VIEW_DEST"
-sudo chmod -R 644 "$ROBOT_VIEW_DEST"/*
-sudo systemctl restart nginx
-sudo systemctl enable nginx >/dev/null 2>&1
+sudo chmod -R 777 "$ROBOT_VIEW_DEST/robot_view"
+
 
 # 7. 创建SSL证书
 sep; info "7. 配置SSL证书"
 SSL_DIR="/etc/nginx/ssl"
-sudo mkdir -p "$SSL_DIR"
+sudo mkdir  "$SSL_DIR"
 if [ -f "$SSL_DIR/hambin.key" ] && [ -f "$SSL_DIR/hambin.crt" ]; then
     info "SSL证书已存在"
 else
@@ -139,6 +139,7 @@ else
         -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=Internal/OU=IT/CN=hambin.com" >/dev/null 2>&1
     [ -f "$SSL_DIR/hambin.key" ] && [ -f "$SSL_DIR/hambin.crt" ] || error "SSL证书生成失败"
 fi
+sudo systemctl restart nginx.service
 
 sep; info "所有配置完成！"
 echo -e "=============================================\n"
