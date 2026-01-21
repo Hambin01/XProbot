@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>led_control</name>
+  <version>0.2.4</version>
+  <description>A Simple Node to led_control</description>
+
+  <maintainer email="821022334@qq.com">Hambin</maintainer>
+  <author email="821022334@qq.com">Hambin</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>std_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>serial</build_depend>
+  <build_depend>std_srvs</build_depend>
+
+  <run_depend>std_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>serial</run_depend>
+  <run_depend>std_srvs</run_depend>
+</package>

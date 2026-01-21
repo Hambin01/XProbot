@@ -12,8 +12,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-include "carto_file/trajectory_builder_2d.lua"
-include "carto_file/trajectory_builder_3d.lua"
+include "trajectory_builder_2d_odom.lua"
+include "trajectory_builder_3d_odom.lua"
 
 TRAJECTORY_BUILDER = {
   trajectory_builder_2d = TRAJECTORY_BUILDER_2D,

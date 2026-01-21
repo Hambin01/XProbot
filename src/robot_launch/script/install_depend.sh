@@ -1,6 +1,7 @@
 #!/bin/bash
-set -euo pipefail
+set -eu
 
+home_dir="/home/b1"
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -38,7 +39,7 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # 主程序
 sep; info "开始安装配置"; sep
-cd ~
+cd $home_dir
 # 设置目标目录
 TARGET_DIR=$([ "$1" == "install" ] && echo "install/share" || echo "src")
 info "目标目录: $TARGET_DIR"
@@ -59,7 +60,7 @@ sep; info "2. 安装系统依赖"
 install_pkg() {
     dpkg -s "$1" >/dev/null 2>&1 && info "$1已安装" || { info "安装$1"; sudo apt install -y "$1"; }
 }
-install_pkg "ros-noetic-autolabor"
+#install_pkg "ros-noetic-autolabor"
 install_pkg "libsdl1.2-dev"
 install_pkg "libsdl-image1.2"
 install_pkg "libmuparser-dev"
@@ -108,15 +109,15 @@ fi
 # 5. 配置Cartographer
 sep; info "5. 配置Cartographer"
 CARTO_DEST="/opt/ros/humble/share/cartographer/configuration_files"
-CARTO_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/carto_file"
+CARTO_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/carto_file"
 create_link "$CARTO_DEST" "$CARTO_SRC" "Cartographer配置"
 sudo chmod 777 -R "$CARTO_SRC"
 
 # 6. 配置Nginx
 sep; info "6. 配置Nginx"
-ROBOT_VIEW_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/script/robot_view"
+ROBOT_VIEW_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/script/robot_view"
 ROBOT_VIEW_DEST="/var/www/"
-ROBOT_CONF_SRC="/home/robot/XProbot/$TARGET_DIR/robot_launch/script/robot.conf"
+ROBOT_CONF_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/script/robot.conf"
 ROBOT_CONF_DEST="/etc/nginx/conf.d/robot.conf"
 
 sudo cp -r  "$ROBOT_VIEW_SRC" "$ROBOT_VIEW_DEST"

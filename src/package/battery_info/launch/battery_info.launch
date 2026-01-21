@@ -1,0 +1,10 @@
+<launch>
+   <node pkg="battery_info" type="battery_info_node" respawn="true" name="battery_info_node" output="screen">
+      <param name="serial_port" value="/dev/ttyS3" />
+      <param name="serial_baudrate" value="9600" />
+      <param name="design_capacity" value="26" />
+      <param name="reconnect_interval" value="3"/>
+      <param name="max_reconnect_attempts" value="-1"/>
+   </node>
+   
+</launch>

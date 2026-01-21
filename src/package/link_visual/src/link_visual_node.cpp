@@ -9,7 +9,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <dynamic_reconfigure/server.h>
-#include <link_visual/ArmVisualizerConfigConfigConfig.h>
+#include <link_visual/ArmVisualizerConfigConfig.h>
 #include <yaml-cpp/yaml.h>
 #include <geometry_msgs/Twist.h>
 #include <fstream>
@@ -147,7 +147,7 @@ private:
   ros::Publisher arm_marker_pub_;
   ros::Publisher predict_arm_marker_pub_;
   ros::Subscriber cmd_vel_sub_;
-  dynamic_reconfigure::Server<link_visual::ArmVisualizerConfigConfigConfig> dyn_reconf_server_;
+  dynamic_reconfigure::Server<link_visual::ArmVisualizerConfigConfig> dyn_reconf_server_;
 
   std::string arm_base_frame_;
   std::vector<std::string> joint_frames_;
@@ -345,7 +345,7 @@ private:
     }
   }
 
-  void dynReconfCallback(link_visual::ArmVisualizerConfigConfigConfig &config, uint32_t level)
+  void dynReconfCallback(link_visual::ArmVisualizerConfigConfig &config, uint32_t level)
   {
     ROS_INFO("Received dynamic parameter update request");
 

@@ -1,12 +1,12 @@
 <launch>
    <node pkg="relay_control" type="relay_control" respawn="true" name="relay_control_node" output="screen">
-        <param name="node_id" value="1" />                  <!-- 模块ID（1-255，手册默认1） -->
-        <param name="baudrate" value="1000000" />           <!-- 波特率（手册支持：20000/50000/100000/125000/200000/250000/400000/500000/800000/1000000） -->
+        <param name="node_id" value="1" />                 
+        <param name="baudrate" value="1000000" />           
         <param name="di_channels" value="8" />              <!-- 数字量输入路数（1-64，默认8） -->
         <param name="do_channels" value="8" />              <!-- 数字量输出路数（1-64，默认8） -->
    </node>
    <node name="can_base_driver" pkg="socketcan_bridge" type="socketcan_bridge_node" respawn="true" output="screen">
-      <param name="can_device" value="vcan0" />
+      <param name="can_device" value="can1" />
       <rosparam>
          can_ids:
                - 0x581

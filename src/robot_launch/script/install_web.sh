@@ -1,0 +1,96 @@
+#!/bin/bash
+set -eu
+
+home_dir="/home/b1"
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# 基础提示函数
+info() { echo -e "\n${GREEN}[INFO]${NC} $1"; }
+warn() { echo -e "\n${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "\n${RED}[ERROR]${NC} $1"; exit 1; }
+sep() { echo -e "\n=============================================\n"; }
+
+# 软链接检查函数
+check_link() {
+    [ -L "$1" ] && [ "$(readlink -f "$1")" = "$(readlink -f "$2")" ] && return 0
+    return 1
+}
+
+# 软链接创建函数
+create_link() {
+    if check_link "$1" "$2"; then
+        info "$3链接已正确配置，跳过"
+    else
+        [ -e "$1" ] && [ ! -L "$1" ] && sudo mv "$1" "${1}_backup_$(date +%Y%m%d_%H%M%S)"
+        [ -L "$1" ] && sudo rm -f "$1"
+        info "配置$3链接: $1 -> $2"
+        sudo ln -s "$2" "$1"
+        check_link "$1" "$2" || error "$3链接配置失败"
+    fi
+}
+
+# 权限检查
+[ "$(id -u)" -ne 0 ] && { warn "需要root权限"; sudo -v; }
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
+# 主程序
+sep; info "开始安装配置"; sep
+cd $home_dir
+# 设置目标目录
+TARGET_DIR=$([ "$1" == "install" ] && echo "install/share" || echo "src")
+info "目标目录: $TARGET_DIR"
+
+# 3. 安装Python包
+sep; info "3. 安装Python依赖"
+install_pip() {
+    python3 -m pip show "$1" >/dev/null 2>&1 && info "$1已安装" || { info "安装$1"; sudo pip3 install "$1"; }
+}
+install_pip "twisted"
+install_pip "pyopenssl"
+install_pip "autobahn"
+install_pip "tornado"
+install_pip "pymongo"
+install_pip "service_identity"
+
+# 5. 配置Cartographer
+sep; info "5. 配置Cartographer"
+CARTO_DEST="/opt/ros/humble/share/cartographer/configuration_files"
+CARTO_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/carto_file"
+create_link "$CARTO_DEST" "$CARTO_SRC" "Cartographer配置"
+sudo chmod 777 -R "$CARTO_SRC"
+
+# 6. 配置Nginx
+sep; info "6. 配置Nginx"
+ROBOT_VIEW_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/script/robot_view"
+ROBOT_VIEW_DEST="/var/www/"
+ROBOT_CONF_SRC="$home_dir/XProbot/$TARGET_DIR/robot_launch/script/robot.conf"
+ROBOT_CONF_DEST="/etc/nginx/conf.d/robot.conf"
+
+sudo cp -r  "$ROBOT_VIEW_SRC" "$ROBOT_VIEW_DEST"
+create_link "$ROBOT_CONF_DEST" "$ROBOT_CONF_SRC" "Nginx配置"
+
+sudo chmod -R 777 "$ROBOT_VIEW_DEST/robot_view"
+
+
+# 7. 创建SSL证书
+sep; info "7. 配置SSL证书"
+SSL_DIR="/etc/nginx/ssl"
+sudo mkdir  "$SSL_DIR"
+if [ -f "$SSL_DIR/hambin.key" ] && [ -f "$SSL_DIR/hambin.crt" ]; then
+    info "SSL证书已存在"
+else
+    info "生成SSL证书"
+    cd "$SSL_DIR" || exit
+    sudo openssl genrsa -out hambin.key 2048 >/dev/null 2>&1
+    sudo openssl req -x509 -new -nodes -key hambin.key -sha256 -days 3650 -out hambin.crt \
+        -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=Internal/OU=IT/CN=hambin.com" >/dev/null 2>&1
+    [ -f "$SSL_DIR/hambin.key" ] && [ -f "$SSL_DIR/hambin.crt" ] || error "SSL证书生成失败"
+fi
+sudo systemctl restart nginx.service
+
+sep; info "所有配置完成！"
+echo -e "=============================================\n"

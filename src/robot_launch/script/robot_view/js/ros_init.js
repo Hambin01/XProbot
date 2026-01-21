@@ -1,5 +1,5 @@
 // ROS连接处理类
-const ROS_WS_URL = 'ws://192.168.9.79:9090';
+const ROS_WS_URL = 'ws://192.168.1.111:9090';
 class ROSHandler {
     constructor(wsUrl) {
         this.wsUrl = wsUrl;

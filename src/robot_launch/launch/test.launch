@@ -10,6 +10,7 @@
    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
    <include file="$(find remote_control)/launch/remote_control.launch"></include>
    <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"></include>
+   <include file="$(find battery_info)/launch/battery_info.launch"></include>
 
   <node pkg="tf" type="static_transform_publisher" name="base2link" args="0 0 0 0 0 0    base_link link_1   25" />
   <node name="map_server" pkg="map_server" type="map_server" args="$(find robot_launch)/maps/map.yaml" >

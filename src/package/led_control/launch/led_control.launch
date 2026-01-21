@@ -1,0 +1,9 @@
+<launch>
+   <node pkg="led_control" type="led_control_node" respawn="true" name="led_control_node" output="screen">
+      <param name="serial_port" value="/dev/ttyS4" />
+      <param name="send_rate" value="20" />
+      <param name="animation_rate" value="20" />
+      <param name="reconnect_interval" value="3" />
+   </node>
+   
+</launch>

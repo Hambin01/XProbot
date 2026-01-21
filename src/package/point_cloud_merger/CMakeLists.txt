@@ -38,7 +38,7 @@ target_link_libraries(point_cloud_merger_node
   ${PCL_LIBRARIES}
 )
 
-install(TARGETS point_cloud_merger
+install(TARGETS point_cloud_merger_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(DIRECTORY launch

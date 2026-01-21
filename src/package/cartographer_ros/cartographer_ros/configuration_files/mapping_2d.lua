@@ -12,8 +12,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-include "indoor_map_builder.lua"
-include "indoor_trajectory_builder.lua"
+include "map_builder.lua"
+include "trajectory_builder.lua"
 
 options = {
 

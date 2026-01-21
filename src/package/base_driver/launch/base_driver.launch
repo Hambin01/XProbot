@@ -18,7 +18,7 @@
     </node>
 
     <node name="can_base_driver" pkg="socketcan_bridge" type="socketcan_bridge_node" respawn="true" output="screen">
-        <param name="can_device" value="vcan0" />
+        <param name="can_device" value="can0" />
         <rosparam>
             can_ids:
                 - 0x581

@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-include "carto_file/pose_graph.lua"
+include "pose_graph_odom.lua"
 
 MAP_BUILDER = {
   use_trajectory_builder_2d = false,

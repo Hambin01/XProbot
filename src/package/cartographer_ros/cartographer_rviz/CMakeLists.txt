@@ -28,6 +28,8 @@ set(PACKAGE_DEPENDENCIES
 if(WIN32)
   set(Boost_USE_STATIC_LIBS FALSE)
 endif()
+set(cartographer_DIR /opt/ros/humble/share/cartographer)
+
 find_package(Boost REQUIRED COMPONENTS system iostreams)
 find_package(cartographer REQUIRED)
 include("${CARTOGRAPHER_CMAKE_DIR}/functions.cmake")
